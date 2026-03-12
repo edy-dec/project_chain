@@ -1,0 +1,32 @@
+.input-group { display: flex; flex-direction: column; gap: 0.4rem; }
+.input-label { font-size: 0.875rem; font-weight: 600; color: var(--text); }
+.input-required { color: var(--danger); margin-left: 3px; }
+
+.input-wrapper { position: relative; }
+.input-icon {
+  position: absolute; left: 0.75rem; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted); pointer-events: none; line-height: 1;
+}
+.input-has-icon { padding-left: 2.5rem !important; }
+
+.input-field {
+  width: 100%;
+  padding: 0.6rem 0.9rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.9rem; color: var(--text);
+  background: var(--surface);
+  transition: var(--transition);
+  outline: none;
+}
+.input-field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(14,165,233,0.15); }
+.input-field::placeholder { color: var(--text-light); }
+
+.input-error .input-field { border-color: var(--danger); }
+.input-error .input-field:focus { box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
+
+.input-error-msg { font-size: 0.8rem; color: var(--danger); }
+.input-hint { font-size: 0.8rem; color: var(--text-muted); }
+
+.select-field { appearance: none; cursor: pointer; }

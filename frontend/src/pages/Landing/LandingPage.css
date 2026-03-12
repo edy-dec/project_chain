@@ -1,0 +1,466 @@
+/* ============================================================
+   Landing Page – Scoped styles (all classes prefixed with lp-)
+   ============================================================ */
+
+/* ── Layout helpers ─────────────────────────────────────────────────────── */
+.lp-root {
+  min-height: 100vh;
+  background: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #111827;
+}
+
+.lp-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .lp-container {
+    padding: 0 2rem;
+  }
+}
+
+/* ── Shared button system ───────────────────────────────────────────────── */
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  white-space: nowrap;
+  transition: background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.lp-btn-dark {
+  background: #111827;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.lp-btn-dark:hover {
+  background: #1f2937;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.lp-btn-outline {
+  background: transparent;
+  color: #374151;
+  border: 1.5px solid #e5e7eb;
+}
+.lp-btn-outline:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.lp-btn-pill {
+  border-radius: 9999px;
+}
+
+/* Sizes */
+.lp-btn-sm {
+  height: 2.25rem;   /* 36px */
+  padding: 0 1.25rem;
+  font-size: 0.875rem;
+}
+
+.lp-btn-lg {
+  height: 3rem;       /* 48px */
+  padding: 0 1.75rem;
+  font-size: 1rem;
+}
+
+.lp-btn-subscribe {
+  height: 2.75rem;
+  padding: 0 1.5rem;
+  font-size: 0.9375rem;
+  border-radius: 0.5rem;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.lp-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.lp-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 4rem; /* 64px */
+}
+
+.lp-logo {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: #111827;
+  user-select: none;
+}
+
+.lp-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Language button */
+.lp-lang-wrapper {
+  position: relative;
+}
+.lp-lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s;
+}
+.lp-lang-btn:hover {
+  color: #111827;
+}
+.lp-lang-chevron {
+  flex-shrink: 0;
+}
+
+/* Language dropdown */
+.lp-lang-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.1);
+  overflow: hidden;
+  z-index: 100;
+  min-width: 4rem;
+}
+
+.lp-lang-option {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  font-weight: 500;
+  color: #374151;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s;
+}
+.lp-lang-option:hover {
+  background: #f9fafb;
+}
+.lp-lang-option--active {
+  color: #111827;
+  background: #f3f4f6;
+  font-weight: 600;
+}
+
+/* Plain text link button */
+.lp-link-btn {
+  font-size: 0.875rem;
+  color: #6b7280;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  transition: color 0.15s;
+  padding: 0;
+}
+.lp-link-btn:hover {
+  color: #111827;
+}
+
+/* ── Hero ────────────────────────────────────────────────────────────────── */
+.lp-hero {
+  position: relative;
+  width: 100%;
+  background: linear-gradient(180deg, #f9fafb 0%, #ffffff 60%, #ffffff 100%);
+  overflow: hidden;
+}
+
+.lp-hero-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 80% 40% at 50% 0%,
+    rgba(219, 234, 254, 0.35) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.lp-hero-container {
+  position: relative;
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+
+@media (min-width: 1024px) {
+  .lp-hero-container {
+    padding-top: 7rem;
+    padding-bottom: 7rem;
+  }
+}
+
+.lp-hero-grid {
+  display: grid;
+  gap: 3rem;
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .lp-hero-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+  }
+}
+
+/* Left column */
+.lp-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.lp-hero-title {
+  font-size: clamp(2.5rem, 5vw, 3.75rem);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: #111827;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.lp-hero-subtitle {
+  font-size: 1.125rem;
+  color: #6b7280;
+  line-height: 1.7;
+  max-width: 36rem;
+  margin: -0.75rem 0 0;
+}
+
+@media (min-width: 1024px) {
+  .lp-hero-subtitle {
+    font-size: 1.25rem;
+  }
+}
+
+.lp-hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Right column */
+.lp-hero-image-wrap {
+  position: relative;
+}
+
+.lp-hero-image-card {
+  position: relative;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(17, 24, 39, 0.1);
+  border: 1px solid rgba(229, 231, 235, 0.6);
+  background: #ffffff;
+  min-height: 240px;
+}
+
+.lp-hero-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.lp-hero-image-glow {
+  position: absolute;
+  bottom: -1rem;
+  right: -1rem;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(219, 234, 254, 0.35),
+    rgba(199, 210, 254, 0.35)
+  );
+  border-radius: 1rem;
+  z-index: -1;
+  filter: blur(40px);
+}
+
+/* ── Features / Trust section ───────────────────────────────────────────── */
+.lp-features {
+  width: 100%;
+  background: #ffffff;
+  padding: 5rem 0;
+}
+
+@media (min-width: 1024px) {
+  .lp-features {
+    padding: 7rem 0;
+  }
+}
+
+.lp-features-header {
+  text-align: center;
+  margin-bottom: 3.5rem;
+}
+
+.lp-features-title {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #111827;
+  margin: 0;
+}
+
+.lp-features-grid {
+  display: grid;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .lp-features-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2.5rem;
+  }
+}
+
+/* Feature card */
+.lp-feature-card {
+  background: #ffffff;
+  border: 1px solid #f3f4f6;
+  border-radius: 1rem;
+  padding: 2rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.lp-feature-card:hover {
+  border-color: #e5e7eb;
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.06);
+  transform: translateY(-2px);
+}
+
+.lp-feature-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #111827, #374151);
+  color: #ffffff;
+  margin-bottom: 1.25rem;
+  flex-shrink: 0;
+}
+
+.lp-feature-card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem;
+}
+
+.lp-feature-card-desc {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* ── Newsletter ─────────────────────────────────────────────────────────── */
+.lp-newsletter {
+  width: 100%;
+  background: #ffffff;
+  padding: 5rem 0;
+  border-top: 1px solid #f3f4f6;
+}
+
+@media (min-width: 1024px) {
+  .lp-newsletter {
+    padding: 7rem 0;
+  }
+}
+
+.lp-newsletter-container {
+  max-width: 42rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.lp-newsletter-title {
+  font-size: clamp(1.5rem, 2.5vw, 1.875rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #111827;
+  margin: 0;
+}
+
+.lp-newsletter-form {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 28rem;
+}
+
+.lp-email-input {
+  flex: 1;
+  height: 2.75rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0 0.875rem;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: #111827;
+  background: #f9fafb;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.lp-email-input::placeholder {
+  color: #9ca3af;
+}
+
+.lp-email-input:focus {
+  border-color: #6b7280;
+  box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.12);
+  background: #ffffff;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+.lp-footer {
+  border-top: 1px solid #f3f4f6;
+  padding: 1.5rem 0;
+}
+
+.lp-footer-text {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin: 0;
+}
