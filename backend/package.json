@@ -1,6 +1,6 @@
 {
   "name": "chain-backend",
-  "version": "1.0.0",
+  "version": "0.2.0-beta",
   "description": "Chain HR Management System – Backend REST API",
   "main": "server.js",
   "scripts": {
@@ -11,6 +11,8 @@
     "seed": "npx sequelize-cli db:seed:all"
   },
   "dependencies": {
+    "@google/genai": "^1.45.0",
+    "@google/generative-ai": "^0.24.1",
     "axios": "^1.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -21,7 +23,6 @@
     "helmet": "^7.1.0",
     "jwks-rsa": "^3.1.0",
     "morgan": "^1.10.0",
-    "openai": "^4.20.0",
     "pg": "^8.11.3",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.35.1",
