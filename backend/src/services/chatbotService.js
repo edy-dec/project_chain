@@ -1,10 +1,22 @@
-const OpenAI = require('openai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { User, Attendance, Leave, Salary, Shift } = require('../models');
 const { Op } = require('sequelize');
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const geminiClient = process.env.GEMINI_API_KEY
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  : null;
 
 class ChatbotService {
+  formatMessages(messages) {
+    return messages
+      .filter((m) => m && typeof m.content === 'string' && m.content.trim().length > 0)
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .map((m) => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+      }));
+  }
+
   /** Build a lean context object from DB data for the system prompt. */
   async buildContext(userId) {
     const today = new Date();
@@ -48,6 +60,10 @@ class ChatbotService {
   }
 
   async chat(userId, messages) {
+    if (!geminiClient) {
+      throw new Error('GEMINI_API_KEY is not configured');
+    }
+
     const ctx = await this.buildContext(userId);
 
     const system = `You are Chain Assistant, the AI helper for the Chain HR Management platform.
@@ -69,14 +85,20 @@ Sick Leave Balance: ${ctx.sickLeave} days${ctx.lastSalary ? `\nLast Salary (${ct
 ❌ Cannot view other employees' data.
 ❌ Cannot approve/reject requests or modify any records.`;
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'system', content: system }, ...messages],
-      max_tokens: 600,
-      temperature: 0.7,
+    const model = geminiClient.getGenerativeModel({
+      model: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+      systemInstruction: system,
     });
 
-    return response.choices[0].message.content;
+    const response = await model.generateContent({
+      contents: this.formatMessages(messages),
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 600,
+      },
+    });
+
+    return response.response.text();
   }
 }
 

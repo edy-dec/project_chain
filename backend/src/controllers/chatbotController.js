@@ -3,7 +3,7 @@ const { success, error } = require('../utils/responseHelper');
 
 const chat = async (req, res, next) => {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {
       return error(res, 'Chatbot service is not configured', 503);
     }
     const { messages } = req.body;
