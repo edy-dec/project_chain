@@ -1,83 +1,140 @@
-const { Leave, User } = require('../models');
+const { Leave, User, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const dateHelper = require('../utils/dateHelper');
+const settingsService = require('./settingsService');
 
 class LeaveService {
   async requestLeave(userId, { type, startDate, endDate, reason }) {
     const days = dateHelper.calculateWorkDays(startDate, endDate);
     if (days <= 0) throw Object.assign(new Error('Invalid date range'), { statusCode: 400 });
+    const settings = await settingsService.getSettings();
+    const autoApproveShortLeave = Boolean(settings.leavePolicy?.autoApproveShortLeave);
+    const shouldAutoApprove = autoApproveShortLeave && days <= 1;
 
-    const user = await User.findByPk(userId);
-    if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+    return sequelize.transaction(async (transaction) => {
+      const user = await User.findByPk(userId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
 
-    if (type === 'annual' && user.annualLeaveBalance < days) {
-      throw Object.assign(
-        new Error(`Insufficient annual leave balance. Available: ${user.annualLeaveBalance} days`),
-        { statusCode: 400 }
-      );
-    }
-    if (type === 'sick' && user.sickLeaveBalance < days) {
-      throw Object.assign(
-        new Error(`Insufficient sick leave balance. Available: ${user.sickLeaveBalance} days`),
-        { statusCode: 400 }
-      );
-    }
+      if (type === 'annual' && user.annualLeaveBalance < days) {
+        throw Object.assign(
+          new Error(`Insufficient annual leave balance. Available: ${user.annualLeaveBalance} days`),
+          { statusCode: 400 }
+        );
+      }
+      if (type === 'sick' && user.sickLeaveBalance < days) {
+        throw Object.assign(
+          new Error(`Insufficient sick leave balance. Available: ${user.sickLeaveBalance} days`),
+          { statusCode: 400 }
+        );
+      }
 
-    // Overlap check
-    const overlap = await Leave.findOne({
-      where: {
+      const overlap = await Leave.findOne({
+        where: {
+          userId,
+          status: { [Op.in]: ['pending', 'approved'] },
+          [Op.or]: [
+            { startDate: { [Op.between]: [startDate, endDate] } },
+            { endDate: { [Op.between]: [startDate, endDate] } },
+            { [Op.and]: [{ startDate: { [Op.lte]: startDate } }, { endDate: { [Op.gte]: endDate } }] },
+          ],
+        },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (overlap) throw Object.assign(new Error('Leave request overlaps with existing leave'), { statusCode: 409 });
+
+      if (shouldAutoApprove) {
+        if (type === 'annual') {
+          await user.update({ annualLeaveBalance: user.annualLeaveBalance - days }, { transaction });
+        } else if (type === 'sick') {
+          await user.update({ sickLeaveBalance: user.sickLeaveBalance - days }, { transaction });
+        }
+      }
+
+      return Leave.create({
         userId,
-        status: { [Op.in]: ['pending', 'approved'] },
-        [Op.or]: [
-          { startDate: { [Op.between]: [startDate, endDate] } },
-          { endDate: { [Op.between]: [startDate, endDate] } },
-          { [Op.and]: [{ startDate: { [Op.lte]: startDate } }, { endDate: { [Op.gte]: endDate } }] },
-        ],
-      },
+        type,
+        startDate,
+        endDate,
+        days,
+        reason,
+        status: shouldAutoApprove ? 'approved' : 'pending',
+        approvedAt: shouldAutoApprove ? new Date() : null,
+        approvedBy: null,
+      }, { transaction });
     });
-    if (overlap) throw Object.assign(new Error('Leave request overlaps with existing leave'), { statusCode: 409 });
-
-    return Leave.create({ userId, type, startDate, endDate, days, reason, status: 'pending' });
   }
 
   async resolveLeave(leaveId, approvedBy, isApproved, rejectionReason = null) {
-    const leave = await Leave.findByPk(leaveId, {
-      include: [{ model: User, as: 'employee' }],
-    });
-    if (!leave) throw Object.assign(new Error('Leave request not found'), { statusCode: 404 });
-    if (leave.status !== 'pending') throw Object.assign(new Error('Leave is not pending'), { statusCode: 400 });
+    return sequelize.transaction(async (transaction) => {
+      const leave = await Leave.findByPk(leaveId, { transaction, lock: transaction.LOCK.UPDATE });
+      if (!leave) throw Object.assign(new Error('Leave request not found'), { statusCode: 404 });
+      if (leave.status !== 'pending') throw Object.assign(new Error('Leave is not pending'), { statusCode: 400 });
 
-    if (isApproved) {
-      const user = leave.employee;
-      if (leave.type === 'annual') {
-        await user.update({ annualLeaveBalance: user.annualLeaveBalance - leave.days });
-      } else if (leave.type === 'sick') {
-        await user.update({ sickLeaveBalance: user.sickLeaveBalance - leave.days });
+      if (isApproved) {
+        const user = await User.findByPk(leave.userId, {
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        });
+        if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+
+        if (leave.type === 'annual') {
+          if (user.annualLeaveBalance < leave.days) {
+            throw Object.assign(
+              new Error(`Insufficient annual leave balance. Available: ${user.annualLeaveBalance} days`),
+              { statusCode: 400 }
+            );
+          }
+          await user.update({ annualLeaveBalance: user.annualLeaveBalance - leave.days }, { transaction });
+        } else if (leave.type === 'sick') {
+          if (user.sickLeaveBalance < leave.days) {
+            throw Object.assign(
+              new Error(`Insufficient sick leave balance. Available: ${user.sickLeaveBalance} days`),
+              { statusCode: 400 }
+            );
+          }
+          await user.update({ sickLeaveBalance: user.sickLeaveBalance - leave.days }, { transaction });
+        }
       }
-    }
 
-    return leave.update({
-      status: isApproved ? 'approved' : 'rejected',
-      approvedBy,
-      approvedAt: new Date(),
-      rejectionReason: isApproved ? null : rejectionReason,
+      return leave.update({
+        status: isApproved ? 'approved' : 'rejected',
+        approvedBy,
+        approvedAt: new Date(),
+        rejectionReason: isApproved ? null : rejectionReason,
+      }, { transaction });
     });
   }
 
   async cancelLeave(leaveId, userId) {
-    const leave = await Leave.findOne({ where: { id: leaveId, userId } });
-    if (!leave) throw Object.assign(new Error('Leave request not found'), { statusCode: 404 });
-    if (!['pending', 'approved'].includes(leave.status)) {
-      throw Object.assign(new Error('Cannot cancel this leave request'), { statusCode: 400 });
-    }
+    return sequelize.transaction(async (transaction) => {
+      const leave = await Leave.findOne({
+        where: { id: leaveId, userId },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!leave) throw Object.assign(new Error('Leave request not found'), { statusCode: 404 });
+      if (!['pending', 'approved'].includes(leave.status)) {
+        throw Object.assign(new Error('Cannot cancel this leave request'), { statusCode: 400 });
+      }
 
-    if (leave.status === 'approved') {
-      const user = await User.findByPk(userId);
-      if (leave.type === 'annual') await user.update({ annualLeaveBalance: user.annualLeaveBalance + leave.days });
-      else if (leave.type === 'sick') await user.update({ sickLeaveBalance: user.sickLeaveBalance + leave.days });
-    }
+      if (leave.status === 'approved') {
+        const user = await User.findByPk(userId, {
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        });
+        if (leave.type === 'annual') {
+          await user.update({ annualLeaveBalance: user.annualLeaveBalance + leave.days }, { transaction });
+        } else if (leave.type === 'sick') {
+          await user.update({ sickLeaveBalance: user.sickLeaveBalance + leave.days }, { transaction });
+        }
+      }
 
-    return leave.update({ status: 'cancelled' });
+      return leave.update({ status: 'cancelled' }, { transaction });
+    });
   }
 
   async getUserLeaves(userId, { status, type, year, page = 1, limit = 20 } = {}) {

@@ -3,6 +3,7 @@ import { TopNav } from '../TopNav';
 import { Bot, Send, Trash2 } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 import { useT } from '../../../../i18n/useT';
+import chatbotService from '../../../../services/chatbotService';
 
 export default function AIAssistantPage() {
   const { lang } = useTheme();
@@ -33,13 +34,17 @@ export default function AIAssistantPage() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/chatbot/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg }),
-      });
-      const data = await res.json();
-      setMessages((prev) => [...prev, { id: Date.now() + 1, role: 'assistant', content: data.response || t('ai.noResponse') }]);
+      const nextMessages = [...messages, userMsg].map(({ role, content }) => ({ role, content }));
+      const res = await chatbotService.chat(nextMessages);
+      const data = res.data;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: 'assistant',
+          content: data?.data?.reply || data?.reply || t('ai.noResponse'),
+        },
+      ]);
     } catch {
       setMessages((prev) => [...prev, { id: Date.now() + 1, role: 'assistant', content: t('ai.errorOccurred') }]);
     } finally {

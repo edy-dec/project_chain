@@ -1,20 +1,27 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { ChatBot } from './ChatBot';
 import { ThemeProvider } from './ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
+import translations from '../../../i18n/translations';
 
 export function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
-  const { loading } = useAuth();
+  const { loading, refreshCurrentUser } = useAuth();
+
+  useEffect(() => {
+    refreshCurrentUser?.();
+  }, [refreshCurrentUser]);
 
   if (loading) {
     const lang = localStorage.getItem('chain-lang') || 'RO';
+    const loadingText = translations['dash.loading']?.[lang] || translations['dash.loading']?.RO || 'Se încarcă...';
     return (
       <div className="min-h-screen bg-dash-bg flex items-center justify-center">
         <span className="text-dash-text-muted" style={{ fontSize: '13px' }}>
-          {lang === 'RO' ? 'Se încarcă...' : 'Loading...'}
+          {loadingText}
         </span>
       </div>
     );

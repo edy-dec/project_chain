@@ -25,6 +25,9 @@ function getInitials(name = '') {
 function getEmployeeName(req) {
   if (req.User?.name) return req.User.name;
   if (req.employee?.name) return req.employee.name;
+  if (req.employee?.firstName || req.employee?.lastName) {
+    return `${req.employee?.firstName || ''} ${req.employee?.lastName || ''}`.trim();
+  }
   if (req.employeeName) return req.employeeName;
   return '–';
 }
@@ -195,15 +198,15 @@ export default function AdminLeave() {
                       <div className="flex items-center justify-end gap-1">
                         {req.status === 'pending' && (
                           <>
-                            <Button variant="ghost" size="icon" onClick={() => approve(req.id)} className="text-success hover:text-success" title="Approve">
+                            <Button variant="ghost" size="icon" onClick={() => approve(req.id)} className="text-success hover:text-success" title={t('adminLeave.approve')}>
                               <Check className="size-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => reject(req.id)} className="text-destructive hover:text-destructive" title="Reject">
+                            <Button variant="ghost" size="icon" onClick={() => reject(req.id)} className="text-destructive hover:text-destructive" title={t('adminLeave.reject')}>
                               <X className="size-4" />
                             </Button>
                           </>
                         )}
-                        <Button variant="ghost" size="icon" onClick={() => { setDetail(req); setRejectNote(''); }} title="View">
+                        <Button variant="ghost" size="icon" onClick={() => { setDetail(req); setRejectNote(''); }} title={t('adminLeave.view')}>
                           <Eye className="size-4" />
                         </Button>
                       </div>

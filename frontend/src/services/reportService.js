@@ -1,9 +1,9 @@
 import api from './api';
 
 const reportService = {
-  getSummary:     (year, month) => api.get('/reports/summary', { params: { year, month } }),
-  getAttendance:  (year, month) => api.get('/reports/attendance', { params: { year, month } }),
-  getSalary:      (year, month) => api.get('/reports/salary', { params: { year, month } }),
+  getSummary:     (params) => api.get('/reports/summary', { params }),
+  getAttendance:  (params) => api.get('/reports/attendance', { params }),
+  getSalary:      (params) => api.get('/reports/salary', { params }),
   getDepartments: ()            => api.get('/reports/departments'),
 };
 

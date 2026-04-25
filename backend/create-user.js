@@ -6,6 +6,7 @@
  */
 require('dotenv').config();
 const { sequelize, User } = require('./src/models');
+const settingsService = require('./src/services/settingsService');
 
 const email = process.argv[2];
 if (!email) { console.error('Usage: node create-user.js <email>'); process.exit(1); }
@@ -22,6 +23,7 @@ if (!email) { console.error('Usage: node create-user.js <email>'); process.exit(
     console.log(`✅ User "${email}" exista deja. Rol actualizat la admin.`);
   } else {
     // Nu există – creează-l cu rol admin
+    const settings = await settingsService.getSettings();
     const [firstName, ...rest] = email.split('@')[0].split('.');
     user = await User.create({
       email,
@@ -31,6 +33,7 @@ if (!email) { console.error('Usage: node create-user.js <email>'); process.exit(
       baseSalary: 0,
       hireDate: new Date(),
       status: 'active',
+      annualLeaveBalance: settings.leavePolicy?.maxAnnualLeaveDays ?? 21,
     });
     console.log(`✅ User "${email}" creat cu succes cu rol admin (id: ${user.id})`);
   }

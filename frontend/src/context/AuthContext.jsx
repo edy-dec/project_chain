@@ -9,6 +9,16 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [userLoading, setUserLoading] = useState(true);
 
+  const fetchMe = useCallback(async (tokenArg) => {
+    const token = tokenArg || await getAccessTokenSilently();
+    const { data } = await api.get('/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const me = data?.data?.user || null;
+    setCurrentUser(me);
+    return me;
+  }, [getAccessTokenSilently]);
+
   /**
    * Request interceptor: attaches a fresh Auth0 token to every axios request.
    * This runs before every call so tokens are always up-to-date.
@@ -20,8 +30,10 @@ export const AuthProvider = ({ children }) => {
         const token = await getAccessTokenSilently();
         config.headers = config.headers || {};
         config.headers['Authorization'] = `Bearer ${token}`;
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       } catch (e) {
-        // If we can't get a token, let the request fail with 401
+        delete api.defaults.headers.common['Authorization'];
+        return Promise.reject(e);
       }
       return config;
     });
@@ -33,6 +45,7 @@ export const AuthProvider = ({ children }) => {
     if (!isAuthenticated) { setUserLoading(false); return; }
     try {
       const token = await getAccessTokenSilently();
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       // auth0User comes from the ID token and always contains email/name.
       // The access token does NOT have these by default, so we send them in the body.
       const { data } = await api.post('/auth/sync', {
@@ -42,12 +55,14 @@ export const AuthProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCurrentUser(data.data.user);
+      await fetchMe(token);
     } catch (err) {
+      delete api.defaults.headers.common['Authorization'];
       console.error('User sync failed:', err);
     } finally {
       setUserLoading(false);
     }
-  }, [isAuthenticated, getAccessTokenSilently, auth0User]);
+  }, [isAuthenticated, getAccessTokenSilently, auth0User, fetchMe]);
 
   useEffect(() => {
     if (!isLoading) syncUser();
@@ -57,6 +72,16 @@ export const AuthProvider = ({ children }) => {
   const refreshToken = useCallback(async () => {
     await getAccessTokenSilently({ ignoreCache: true });
   }, [getAccessTokenSilently]);
+
+  const refreshCurrentUser = useCallback(async () => {
+    if (!isAuthenticated) return null;
+    try {
+      return await fetchMe();
+    } catch (err) {
+      console.error('Refresh current user failed:', err);
+      return null;
+    }
+  }, [isAuthenticated, fetchMe]);
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -81,6 +106,7 @@ export const AuthProvider = ({ children }) => {
       login: loginWithRedirect,
       logout: handleLogout,
       refreshToken,
+      refreshCurrentUser,
     }}>
       {children}
     </AuthContext.Provider>

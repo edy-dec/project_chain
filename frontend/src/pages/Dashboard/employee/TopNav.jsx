@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from './ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
+import { useT } from '../../../i18n/useT';
 import { Sun, Moon, Bell, ChevronDown, LogOut, User, Globe } from 'lucide-react';
 
 const NOTIFS = {
@@ -18,6 +19,7 @@ const NOTIFS = {
 
 export function TopNav({ title }) {
   const { theme, toggleTheme, lang, toggleLang } = useTheme();
+  const t = useT(lang);
   const { currentUser, logout } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen]       = useState(false);
@@ -52,7 +54,7 @@ export function TopNav({ title }) {
         <button
           onClick={toggleTheme}
           className="w-8 h-8 flex items-center justify-center rounded-md text-dash-text-secondary hover:bg-dash-sidebar-hover hover:text-dash-text transition-colors"
-          title={theme === 'dark' ? (lang === 'RO' ? 'Mod luminos' : 'Light mode') : (lang === 'RO' ? 'Mod întunecat' : 'Dark mode')}
+          title={theme === 'dark' ? t('topnav.lightMode') : t('topnav.darkMode')}
         >
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
         </button>
@@ -61,7 +63,7 @@ export function TopNav({ title }) {
         <button
           onClick={toggleLang}
           className="w-8 h-8 flex items-center justify-center rounded-md text-dash-text-secondary hover:bg-dash-sidebar-hover hover:text-dash-text transition-colors"
-          title={lang === 'RO' ? 'Switch to English' : 'Schimbă în Română'}
+          title={lang === 'RO' ? t('topnav.switchEN') : t('topnav.switchRO')}
         >
           <Globe size={15} />
         </button>
@@ -71,7 +73,7 @@ export function TopNav({ title }) {
           <button
             onClick={() => { setNotifOpen((v) => !v); setUserMenuOpen(false); }}
             className="relative w-8 h-8 flex items-center justify-center rounded-md text-dash-text-secondary hover:bg-dash-sidebar-hover hover:text-dash-text transition-colors"
-            title={lang === 'RO' ? 'Notificări' : 'Notifications'}
+            title={t('topnav.notifications')}
           >
             <Bell size={16} />
             {unreadCount > 0 && (
@@ -82,11 +84,11 @@ export function TopNav({ title }) {
             <div className="absolute right-0 top-10 bg-dash-card border border-dash-border rounded-lg shadow-lg z-50" style={{ width: '300px' }}>
               <div className="flex items-center justify-between px-4 py-3 border-b border-dash-border">
                 <p className="text-dash-text" style={{ fontSize: '13px', fontWeight: 600 }}>
-                  {lang === 'RO' ? 'Notificări' : 'Notifications'}
+                  {t('topnav.notifications')}
                 </p>
                 {unreadCount > 0 && (
                   <span className="text-dash-primary" style={{ fontSize: '11px', fontWeight: 500 }}>
-                    {unreadCount} {lang === 'RO' ? 'necitite' : 'unread'}
+                    {unreadCount} {t('topnav.unread')}
                   </span>
                 )}
               </div>
@@ -113,7 +115,7 @@ export function TopNav({ title }) {
                   className="text-dash-primary hover:underline"
                   style={{ fontSize: '11px' }}
                 >
-                  {lang === 'RO' ? 'Marchează toate ca citite' : 'Mark all as read'}
+                  {t('topnav.markAllRead')}
                 </button>
               </div>
             </div>
@@ -142,7 +144,7 @@ export function TopNav({ title }) {
                 style={{ fontSize: '13px' }}
               >
                 <User size={14} />
-                {lang === 'RO' ? 'Profilul meu' : 'My Profile'}
+                {t('topnav.myProfile')}
               </a>
               <hr className="my-1 border-dash-border" />
               <button
@@ -151,7 +153,7 @@ export function TopNav({ title }) {
                 style={{ fontSize: '13px' }}
               >
                 <LogOut size={14} />
-                {lang === 'RO' ? 'Deconectare' : 'Logout'}
+                {t('topnav.logout')}
               </button>
             </div>
           )}

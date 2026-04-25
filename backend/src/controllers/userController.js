@@ -10,6 +10,12 @@ const getAll = async (req, res, next) => {
 
 const getById = async (req, res, next) => {
   try {
+    const canView =
+      req.currentUser?.id === req.params.id
+      || ['admin', 'manager'].includes(req.currentUser?.role);
+    if (!canView) {
+      throw Object.assign(new Error('Insufficient permissions'), { statusCode: 403 });
+    }
     const employee = await userService.findById(req.params.id);
     return success(res, { employee });
   } catch (err) { next(err); }

@@ -7,6 +7,8 @@ const salaryRoutes     = require('./salaryRoutes');
 const shiftRoutes      = require('./shiftRoutes');
 const reportRoutes     = require('./reportRoutes');
 const chatbotRoutes    = require('./chatbotRoutes');
+const settingsRoutes   = require('./settingsRoutes');
+const bonusRoutes      = require('./bonusRoutes');
 
 const router = express.Router();
 
@@ -18,5 +20,7 @@ router.use('/salary',      salaryRoutes);
 router.use('/shifts',      shiftRoutes);
 router.use('/reports',     reportRoutes);
 router.use('/chatbot',     chatbotRoutes);
+router.use('/settings',    settingsRoutes);
+router.use('/bonuses',     bonusRoutes);
 
 module.exports = router;

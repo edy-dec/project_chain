@@ -17,50 +17,32 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useTheme } from './ThemeContext';
+import { useT } from '../../../i18n/useT';
 
-const NAV = {
-  RO: [
-    { to: '/dashboard',              icon: LayoutDashboard, label: 'Prezentare',   end: true },
-    { to: '/dashboard/time-tracking',icon: Clock,           label: 'Pontaj'               },
-    { to: '/dashboard/schedule',     icon: CalendarDays,    label: 'Program'              },
-    { to: '/dashboard/salary',       icon: DollarSign,      label: 'Salariu'              },
-    { to: '/dashboard/leave',        icon: CalendarCheck,   label: 'Concediu'             },
-    { to: '/dashboard/history',      icon: History,         label: 'Istoric'              },
-    { to: '/dashboard/ai-assistant', icon: Bot,             label: 'Asistent AI'          },
-  ],
-  EN: [
-    { to: '/dashboard',              icon: LayoutDashboard, label: 'Overview',     end: true },
-    { to: '/dashboard/time-tracking',icon: Clock,           label: 'Time Tracking'        },
-    { to: '/dashboard/schedule',     icon: CalendarDays,    label: 'Schedule'             },
-    { to: '/dashboard/salary',       icon: DollarSign,      label: 'Salary'               },
-    { to: '/dashboard/leave',        icon: CalendarCheck,   label: 'Leave'                },
-    { to: '/dashboard/history',      icon: History,         label: 'History'              },
-    { to: '/dashboard/ai-assistant', icon: Bot,             label: 'AI Assistant'         },
-  ],
-};
+const NAV = [
+  { to: '/dashboard',               icon: LayoutDashboard, key: 'sidebar.overview', end: true },
+  { to: '/dashboard/time-tracking', icon: Clock,           key: 'sidebar.timeTracking' },
+  { to: '/dashboard/schedule',      icon: CalendarDays,    key: 'sidebar.schedule' },
+  { to: '/dashboard/salary',        icon: DollarSign,      key: 'sidebar.salary' },
+  { to: '/dashboard/leave',         icon: CalendarCheck,   key: 'sidebar.leave' },
+  { to: '/dashboard/history',       icon: History,         key: 'sidebar.history' },
+  { to: '/dashboard/ai-assistant',  icon: Bot,             key: 'sidebar.aiAssistant' },
+];
 
-const ADMIN_NAV = {
-  RO: [
-    { to: '/admin',           icon: LayoutDashboard, label: 'Admin Panel' },
-    { to: '/admin/employees', icon: Users,           label: 'Angajați'   },
-    { to: '/admin/leave',     icon: ClipboardList,   label: 'Concedii'   },
-    { to: '/admin/shifts',    icon: CalendarClock,   label: 'Schimburi'  },
-    { to: '/admin/reports',   icon: BarChart2,       label: 'Rapoarte'   },
-  ],
-  EN: [
-    { to: '/admin',           icon: LayoutDashboard, label: 'Admin Panel' },
-    { to: '/admin/employees', icon: Users,           label: 'Employees'  },
-    { to: '/admin/leave',     icon: ClipboardList,   label: 'Leave'      },
-    { to: '/admin/shifts',    icon: CalendarClock,   label: 'Shifts'     },
-    { to: '/admin/reports',   icon: BarChart2,       label: 'Reports'    },
-  ],
-};
+const ADMIN_NAV = [
+  { to: '/admin',           icon: LayoutDashboard, key: 'sidebar.adminPanel' },
+  { to: '/admin/employees', icon: Users,           key: 'sidebar.employees' },
+  { to: '/admin/leave',     icon: ClipboardList,   key: 'nav.leave' },
+  { to: '/admin/shifts',    icon: CalendarClock,   key: 'sidebar.shifts' },
+  { to: '/admin/reports',   icon: BarChart2,       key: 'sidebar.reports' },
+];
 
 export function Sidebar({ collapsed, onToggle }) {
   const { isAdminOrManager } = useAuth();
   const { lang } = useTheme();
-  const navItems      = NAV[lang]       || NAV.RO;
-  const adminNavItems = ADMIN_NAV[lang] || ADMIN_NAV.RO;
+  const t = useT(lang);
+  const navItems = NAV;
+  const adminNavItems = ADMIN_NAV;
 
   return (
     <aside
@@ -73,7 +55,7 @@ export function Sidebar({ collapsed, onToggle }) {
         <a
           href="/"
           className="flex items-center gap-2 overflow-hidden flex-1 min-w-0"
-          title="Go to home"
+          title={t('sidebar.goHome')}
         >
           <div className="w-7 h-7 rounded-md bg-dash-primary flex items-center justify-center shrink-0">
             <span className="text-white" style={{ fontSize: '12px', fontWeight: 700 }}>C</span>
@@ -88,7 +70,7 @@ export function Sidebar({ collapsed, onToggle }) {
         {/* Toggle button */}
         <button
           onClick={onToggle}
-          title={collapsed ? 'Expand menu' : 'Collapse menu'}
+          title={collapsed ? t('sidebar.expandMenu') : t('sidebar.collapseMenu')}
           className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-dash-text-muted hover:bg-dash-sidebar-hover hover:text-dash-text transition-colors"
         >
           {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
@@ -99,7 +81,7 @@ export function Sidebar({ collapsed, onToggle }) {
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
         {!collapsed && (
           <p className="px-3 pt-1 pb-2 text-dash-text-muted uppercase tracking-wider" style={{ fontSize: '10px', fontWeight: 600 }}>
-            Menu
+            {t('sidebar.menu')}
           </p>
         )}
         {navItems.map((item) => (
@@ -107,7 +89,7 @@ export function Sidebar({ collapsed, onToggle }) {
             key={item.to}
             to={item.to}
             end={item.end}
-            title={collapsed ? item.label : undefined}
+            title={collapsed ? t(item.key) : undefined}
             className={({ isActive }) =>
               `relative flex items-center gap-3 rounded-md transition-colors duration-150 ${
                 collapsed ? 'justify-center px-0 py-2' : 'px-3 py-2'
@@ -126,7 +108,7 @@ export function Sidebar({ collapsed, onToggle }) {
                 <item.icon size={18} strokeWidth={isActive ? 2 : 1.5} className="shrink-0" />
                 {!collapsed && (
                   <span style={{ fontSize: '13px', fontWeight: isActive ? 500 : 400 }}>
-                    {item.label}
+                    {t(item.key)}
                   </span>
                 )}
               </>
@@ -140,7 +122,7 @@ export function Sidebar({ collapsed, onToggle }) {
         <div className="py-3 px-2 border-t border-dash-border">
           {!collapsed && (
             <p className="px-3 pt-1 pb-2 text-dash-text-muted uppercase tracking-wider" style={{ fontSize: '10px', fontWeight: 600 }}>
-              Admin
+              {t('sidebar.admin')}
             </p>
           )}
           <div className="space-y-0.5">
@@ -148,7 +130,7 @@ export function Sidebar({ collapsed, onToggle }) {
               <NavLink
                 key={item.to}
                 to={item.to}
-                title={collapsed ? item.label : undefined}
+                title={collapsed ? t(item.key) : undefined}
                 className={({ isActive }) =>
                   `relative flex items-center gap-3 rounded-md transition-colors duration-150 ${
                     collapsed ? 'justify-center px-0 py-2' : 'px-3 py-2'
@@ -167,7 +149,7 @@ export function Sidebar({ collapsed, onToggle }) {
                     <item.icon size={18} strokeWidth={isActive ? 2 : 1.5} className="shrink-0" />
                     {!collapsed && (
                       <span style={{ fontSize: '13px', fontWeight: isActive ? 500 : 400 }}>
-                        {item.label}
+                        {t(item.key)}
                       </span>
                     )}
                   </>
@@ -182,7 +164,7 @@ export function Sidebar({ collapsed, onToggle }) {
       {!collapsed && (
         <div className="px-4 py-3 border-t border-dash-border">
           <p className="text-dash-text-muted" style={{ fontSize: '11px' }}>
-            Chain HR Platform v1.0
+            {t('sidebar.platform')}
           </p>
         </div>
       )}

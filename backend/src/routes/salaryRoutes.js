@@ -13,6 +13,7 @@ router.get('/',                          requireRole(['admin']), ctrl.getAllSala
 router.get('/employee/:userId',          requireRole(['admin']), ctrl.getUserSalaries);
 router.post('/generate/:userId',         requireRole(['admin']), ctrl.generateSalary);
 router.post('/generate-all',             requireRole(['admin']), ctrl.generateAll);
+router.post('/pay-all',                  requireRole(['admin']), ctrl.payAll);
 router.patch('/:id/paid',                requireRole(['admin']), ctrl.markAsPaid);
 
 module.exports = router;

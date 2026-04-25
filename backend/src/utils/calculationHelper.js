@@ -1,3 +1,5 @@
+const { getDepartmentKey } = require('./departmentHelper');
+
 /**
  * Returns the number of Mon-Fri working days in a given month.
  */
@@ -15,13 +17,31 @@ const getWorkingDaysInMonth = (year, month) => {
  * Sum bonus amounts against a base salary.
  * Supports 'fixed' (flat RON) and 'percentage' (% of base) types.
  */
-const calculateBonuses = (bonuses = [], baseSalary = 0) =>
-  bonuses.reduce((total, b) => {
-    if (!b.isActive) return total;
-    if (b.type === 'fixed') return total + +b.amount;
-    if (b.type === 'percentage') return total + (baseSalary * +b.amount) / 100;
+const calculateBonuses = (
+  bonuses = [],
+  baseSalary = 0,
+  { employeeDepartment = null, periodStart = null, periodEnd = null } = {}
+) => bonuses.reduce((total, b) => {
+  if (!b.isActive) return total;
+
+  const appliesTo = b.appliesTo || 'All';
+  const appliesToKey = getDepartmentKey(appliesTo);
+  const employeeDepartmentKey = getDepartmentKey(employeeDepartment);
+  if (
+    appliesToKey !== 'all' &&
+    employeeDepartmentKey &&
+    appliesToKey !== employeeDepartmentKey
+  ) {
     return total;
-  }, 0);
+  }
+
+  if (periodStart && b.applicableTo && String(b.applicableTo) < String(periodStart)) return total;
+  if (periodEnd && b.applicableFrom && String(b.applicableFrom) > String(periodEnd)) return total;
+
+  if (b.type === 'fixed') return total + +b.amount;
+  if (b.type === 'percentage') return total + (baseSalary * +b.amount) / 100;
+  return total;
+}, 0);
 
 /**
  * Romanian employee tax contributions (simplified 2024 rules):

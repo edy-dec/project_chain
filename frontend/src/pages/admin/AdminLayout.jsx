@@ -20,45 +20,52 @@ import {
   Building2,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import employeeService from '../../services/employeeService';
+import leaveService from '../../services/leaveService';
+import { useT } from '../../i18n/useT';
+import { getDepartmentLabel } from '../../utils/departmentLabel';
 
 // ── Theme context ──────────────────────────────────────────────────────────
 const ThemeCtx = createContext({ dark: false, toggleDark: () => {}, lang: 'RO', toggleLang: () => {} });
 export const useTheme = () => useContext(ThemeCtx);
 
 // ── Nav items (bilingual) ──────────────────────────────────────────────────
-const NAV_ITEMS = {
-  EN: [
-    { label: 'Overview',   to: '/admin',          icon: LayoutDashboard, end: true },
-    { label: 'Employees',  to: '/admin/employees', icon: Users },
-    { label: 'Shifts',     to: '/admin/shifts',    icon: Calendar },
-    { label: 'Leave',      to: '/admin/leave',     icon: FileText },
-    { label: 'Bonuses',    to: '/admin/bonuses',   icon: Gift },
-    { label: 'Reports',    to: '/admin/reports',   icon: BarChart2 },
-    { label: 'Settings',   to: '/admin/settings',  icon: Settings },
-  ],
-  RO: [
-    { label: 'Prezentare', to: '/admin',          icon: LayoutDashboard, end: true },
-    { label: 'Angajați',   to: '/admin/employees', icon: Users },
-    { label: 'Schimburi',  to: '/admin/shifts',    icon: Calendar },
-    { label: 'Concedii',   to: '/admin/leave',     icon: FileText },
-    { label: 'Bonusuri',   to: '/admin/bonuses',   icon: Gift },
-    { label: 'Rapoarte',   to: '/admin/reports',   icon: BarChart2 },
-    { label: 'Setări',     to: '/admin/settings',  icon: Settings },
-  ],
-};
+const NAV_ITEMS = [
+  { key: 'nav.overview',  to: '/admin',           icon: LayoutDashboard, end: true },
+  { key: 'nav.employees', to: '/admin/employees', icon: Users },
+  { key: 'nav.shifts',    to: '/admin/shifts',    icon: Calendar },
+  { key: 'nav.leave',     to: '/admin/leave',     icon: FileText },
+  { key: 'nav.bonuses',   to: '/admin/bonuses',   icon: Gift },
+  { key: 'nav.reports',   to: '/admin/reports',   icon: BarChart2 },
+  { key: 'nav.settings',  to: '/admin/settings',  icon: Settings },
+];
 
-// ── Notifications data (bilingual) ────────────────────────────────────────
-const NOTIFS_DATA = {
-  EN: [
-    { id: 1, text: 'Maria Pop requested 3 days vacation leave',               time: '10m ago', unread: true  },
-    { id: 2, text: 'Ion Ionescu clocked in at 08:54',                         time: '1h ago',  unread: true  },
-    { id: 3, text: 'March payroll processed – 45,200 RON total',              time: '2h ago',  unread: false },
-  ],
-  RO: [
-    { id: 1, text: 'Maria Pop a solicitat 3 zile concediu de odihnă',        time: '10 min',  unread: true  },
-    { id: 2, text: 'Ion Ionescu a înregistrat intrarea la 08:54',            time: '1 oră',   unread: true  },
-    { id: 3, text: 'Salariile pentru Martie au fost procesate – 45.200 RON', time: '2 ore',   unread: false },
-  ],
+const formatName = (e) => `${e?.firstName || ''} ${e?.lastName || ''}`.trim() || e?.email || 'N/A';
+
+const buildNotifications = (lang, t, employees = [], pendingLeaves = []) => {
+  const leaveNotifs = pendingLeaves.slice(0, 2).map((leave, idx) => ({
+    id: `leave-${leave.id}`,
+    text: lang === 'RO'
+      ? `${formatName(leave.employee)} a solicitat concediu`
+      : `${formatName(leave.employee)} requested leave`,
+      time: leave.createdAt ? new Date(leave.createdAt).toLocaleDateString(lang === 'RO' ? 'ro-RO' : 'en-US') : '—',
+    unread: idx === 0,
+  }));
+
+  const employeeNotifs = employees
+    .slice()
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .slice(0, 2)
+    .map((emp, idx) => ({
+      id: `emp-${emp.id}`,
+      text: lang === 'RO'
+        ? `Angajat: ${formatName(emp)} (${getDepartmentLabel(emp.department, t, { fallback: 'Fara departament' })})`
+        : `Employee: ${formatName(emp)} (${getDepartmentLabel(emp.department, t, { fallback: 'No department' })})`,
+      time: emp.createdAt ? new Date(emp.createdAt).toLocaleDateString(lang === 'RO' ? 'ro-RO' : 'en-US') : '—',
+      unread: idx === 0,
+    }));
+
+  return [...leaveNotifs, ...employeeNotifs];
 };
 
 // ── Main Layout ────────────────────────────────────────────────────────────
@@ -68,7 +75,9 @@ export default function AdminLayout() {
   const [lang, setLang]                   = useState(() => localStorage.getItem('chain-lang') || 'RO');
   const [profileOpen, setProfileOpen]     = useState(false);
   const [notifOpen, setNotifOpen]         = useState(false);
-  const [notifications, setNotifications] = useState(() => NOTIFS_DATA[localStorage.getItem('chain-lang') || 'RO']);
+  const [notifications, setNotifications] = useState([]);
+  const [notifSource, setNotifSource] = useState({ employees: [], pendingLeaves: [] });
+  const t = useT(lang);
   const { user, logout } = useAuth0();
   const profileRef = useRef(null);
   const notifRef   = useRef(null);
@@ -86,6 +95,27 @@ export default function AdminLayout() {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        const [empRes, leaveRes] = await Promise.all([
+          employeeService.getAll({ limit: 20 }),
+          leaveService.getAll({ status: 'pending', limit: 20 }),
+        ]);
+        const employees = empRes.data?.data ?? empRes.data?.employees ?? [];
+        const pendingLeaves = leaveRes.data?.data ?? leaveRes.data?.leaves ?? [];
+        setNotifSource({ employees, pendingLeaves });
+      } catch {
+        setNotifSource({ employees: [], pendingLeaves: [] });
+      }
+    };
+    loadNotifications();
+  }, []);
+
+  useEffect(() => {
+    setNotifications(buildNotifications(lang, t, notifSource.employees, notifSource.pendingLeaves));
+  }, [lang, t, notifSource]);
+
   const toggleDark = () => setDark((d) => {
     const next = !d;
     document.documentElement.classList.toggle('dark', next);
@@ -96,11 +126,10 @@ export default function AdminLayout() {
   const toggleLang = () => setLang((l) => {
     const next = l === 'EN' ? 'RO' : 'EN';
     localStorage.setItem('chain-lang', next);
-    setNotifications(NOTIFS_DATA[next]);
     return next;
   });
 
-  const navItems    = NAV_ITEMS[lang] || NAV_ITEMS.RO;
+  const navItems = NAV_ITEMS;
   const unreadCount = notifications.filter((n) => n.unread).length;
   const initials    = user?.name
     ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
@@ -124,14 +153,14 @@ export default function AdminLayout() {
               </div>
               {!collapsed && (
                 <span className="font-semibold text-sm text-sidebar-foreground truncate">
-                  Chain Admin
+                  {t('layout.chainAdmin')}
                 </span>
               )}
             </div>
             <button
               onClick={() => setCollapsed(!collapsed)}
               className="ml-auto p-1 rounded hover:bg-sidebar-accent text-muted-foreground hover:text-sidebar-foreground transition-colors shrink-0"
-              title={collapsed ? 'Expand' : 'Collapse'}
+              title={collapsed ? t('layout.expand') : t('layout.collapse')}
             >
               {collapsed ? (
                 <ChevronRight className="size-4" />
@@ -163,7 +192,7 @@ export default function AdminLayout() {
                       <span className="absolute left-0 top-1 bottom-1 w-0.5 bg-sidebar-primary rounded-full" />
                     )}
                     <item.icon className="size-4 shrink-0" />
-                    {!collapsed && <span>{item.label}</span>}
+                    {!collapsed && <span>{t(item.key)}</span>}
                   </>
                 )}
               </NavLink>
@@ -179,7 +208,7 @@ export default function AdminLayout() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-sidebar-foreground truncate">
-                    {user?.name || 'Admin'}
+                    {user?.name || t('layout.admin')}
                   </p>
                   <p className="text-[10px] text-muted-foreground truncate">
                     {user?.email || ''}
@@ -203,7 +232,7 @@ export default function AdminLayout() {
               <button
                 onClick={() => { setNotifOpen((v) => !v); setProfileOpen(false); }}
                 className="relative p-2 rounded-md hover:bg-accent text-muted-foreground"
-                title={lang === 'RO' ? 'Notificări' : 'Notifications'}
+                title={t('layout.notifications')}
               >
                 <Bell className="size-4" />
                 {unreadCount > 0 && (
@@ -213,10 +242,10 @@ export default function AdminLayout() {
               {notifOpen && (
                 <div className="absolute right-0 top-full mt-1 w-80 bg-card border border-border rounded-lg shadow-lg z-50">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                    <p className="text-sm font-semibold">{lang === 'RO' ? 'Notificări' : 'Notifications'}</p>
+                    <p className="text-sm font-semibold">{t('layout.notifications')}</p>
                     {unreadCount > 0 && (
                       <span className="text-xs text-primary font-medium">
-                        {unreadCount} {lang === 'RO' ? 'necitite' : 'unread'}
+                        {unreadCount} {t('layout.unread')}
                       </span>
                     )}
                   </div>
@@ -242,7 +271,7 @@ export default function AdminLayout() {
                       onClick={() => setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })))}
                       className="text-xs text-primary hover:underline"
                     >
-                      {lang === 'RO' ? 'Marchează toate ca citite' : 'Mark all as read'}
+                      {t('layout.markAllRead')}
                     </button>
                   </div>
                 </div>
@@ -253,7 +282,7 @@ export default function AdminLayout() {
             <button
               onClick={toggleDark}
               className="p-2 rounded-md hover:bg-accent text-muted-foreground"
-              title={dark ? (lang === 'RO' ? 'Mod luminos' : 'Light mode') : (lang === 'RO' ? 'Mod întunecat' : 'Dark mode')}
+              title={dark ? t('layout.lightMode') : t('layout.darkMode')}
             >
               {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </button>
@@ -262,7 +291,7 @@ export default function AdminLayout() {
             <button
               onClick={toggleLang}
               className="flex items-center gap-1 p-2 rounded-md hover:bg-accent text-muted-foreground text-xs font-medium"
-              title={lang === 'RO' ? 'Switch to English' : 'Schimbă în Română'}
+              title={lang === 'RO' ? t('layout.switchEN') : t('layout.switchRO')}
             >
               <Globe className="size-4" />
               {lang}
@@ -290,7 +319,7 @@ export default function AdminLayout() {
                     className="w-full text-left px-3 py-2 text-sm text-destructive hover:bg-destructive/5 flex items-center gap-2"
                   >
                     <LogOut className="size-4" />
-                    {lang === 'RO' ? 'Deconectare' : 'Log out'}
+                    {t('layout.logout')}
                   </button>
                 </div>
               )}

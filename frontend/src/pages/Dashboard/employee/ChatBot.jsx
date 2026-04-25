@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Bot, X, Send, Minimize2 } from 'lucide-react';
 import { useTheme } from './ThemeContext';
 import { useT } from '../../../i18n/useT';
+import chatbotService from '../../../services/chatbotService';
 
 export function ChatBot() {
   const { lang } = useTheme();
@@ -34,15 +35,16 @@ export function ChatBot() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/chatbot/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
-      });
-      const data = await res.json();
+      const nextMessages = [...messages, userMsg].map(({ role, content }) => ({ role, content }));
+      const res = await chatbotService.chat(nextMessages);
+      const data = res.data;
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, role: 'assistant', content: data.response || t('chatEmbed.sorry') },
+        {
+          id: Date.now() + 1,
+          role: 'assistant',
+          content: data?.data?.reply || data?.reply || t('chatEmbed.sorry'),
+        },
       ]);
     } catch {
       setMessages((prev) => [

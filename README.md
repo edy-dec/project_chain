@@ -12,7 +12,7 @@
 | Backend | Node.js, Express.js (MVC + Layered Architecture) |
 | Autentificare | Auth0 (RS256 JWT), express-jwt, jwks-rsa |
 | Bază de date | PostgreSQL + Sequelize v6 ORM |
-| AI Chatbot | OpenAI API (GPT-3.5-turbo) |
+| AI Chatbot | Google Gemini API |
 | Hosting | Render (backend + frontend) |
 
 ---
@@ -58,7 +58,7 @@ project_CHAIN/
 - Node.js ≥ 18
 - PostgreSQL ≥ 14
 - Cont Auth0 (gratuit)
-- Cheie API OpenAI (opțional, pentru chatbot)
+- Cheie API Gemini (opțional, pentru chatbot)
 
 ---
 
@@ -95,8 +95,9 @@ DATABASE_URL=postgresql://user:password@localhost:5432/chain_hr
 AUTH0_DOMAIN=your-tenant.auth0.com
 AUTH0_AUDIENCE=https://your-api-audience
 
-# OpenAI (opțional)
-OPENAI_API_KEY=sk-...
+# Gemini (opțional)
+GEMINI_API_KEY=AIza...
+GEMINI_MODEL=gemini-1.5-flash
 
 # Frontend URL (pentru CORS)
 CLIENT_URL=http://localhost:3000

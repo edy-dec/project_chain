@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, Search, Pencil, Trash2, ToggleLeft, ToggleRight, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -10,10 +10,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Ta
 import employeeService from '../../services/employeeService';
 import { useTheme } from './AdminLayout';
 import { useT } from '../../i18n/useT';
+import { getDepartmentLabel } from '../../utils/departmentLabel';
 
 const ITEMS_PER_PAGE = 8;
-
-const departments = ['Engineering', 'Design', 'Marketing', 'HR', 'Finance', 'Operations', 'Sales'];
 
 /** Safely extract department name whether it's a string or {id,name,color} object */
 const deptName = (d) => (d && typeof d === 'object' ? d.name : d);
@@ -35,6 +34,7 @@ const emptyForm = {
 // ── Employee Detail sidebar ───────────────────────────────────────────────
 function EmployeeDetail({ employee, onClose, t }) {
   if (!employee) return null;
+  employee = { ...employee, salary: employee.baseSalary ?? employee.salary };
   const name = employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim();
   return (
     <div className="fixed inset-y-0 right-0 z-40 w-full max-w-md bg-card border-l border-border shadow-xl flex flex-col">
@@ -53,7 +53,7 @@ function EmployeeDetail({ employee, onClose, t }) {
             <p className="text-base font-semibold text-foreground">{name}</p>
             <p className="text-sm text-muted-foreground">{employee.position || employee.role || '–'}</p>
             <Badge className={statusBadge[employee.status] || statusBadge.active}>
-              {employee.status || 'active'}
+              {employee.status === 'inactive' ? t('employees.inactive') : t('employees.active')}
             </Badge>
           </div>
         </div>
@@ -69,7 +69,7 @@ function EmployeeDetail({ employee, onClose, t }) {
               {[
                 { label: t('profile.email'),       value: employee.email },
                 { label: t('profile.phone'),       value: employee.phone || '–' },
-                { label: t('profile.department'),  value: deptName(employee.department) || '–' },
+                { label: t('profile.department'),  value: getDepartmentLabel(employee.department, t, { fallback: '–' }) },
               ].map(({ label, value }) => (
                 <div key={label} className="flex flex-col gap-0.5">
                   <span className="text-xs text-muted-foreground">{label}</span>
@@ -82,7 +82,7 @@ function EmployeeDetail({ employee, onClose, t }) {
             <div className="space-y-3 mt-4">
               {[
                 { label: t('employees.position'),   value: employee.position || '–' },
-                { label: t('employees.department'), value: deptName(employee.department) || '–' },
+                { label: t('employees.department'), value: getDepartmentLabel(employee.department, t, { fallback: '–' }) },
                 { label: t('employees.startDate'), value: employee.startDate || employee.createdAt?.slice(0, 10) || '–' },
               ].map(({ label, value }) => (
                 <div key={label} className="flex flex-col gap-0.5">
@@ -131,6 +131,20 @@ export default function AdminEmployees() {
   const { lang } = useTheme();
   const t = useT(lang);
 
+  const departments = useMemo(() => {
+    const map = new Map();
+    employees.forEach((e) => {
+      if (e?.department?.id && e?.department?.name) {
+        map.set(e.department.id, e.department.name);
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({
+      id,
+      name,
+      label: getDepartmentLabel(name, t, { fallback: '–' }),
+    }));
+  }, [employees, t]);
+
   const load = useCallback(async () => {
     try {
       setLoading(true);
@@ -150,7 +164,7 @@ export default function AdminEmployees() {
   const filtered = employees.filter((e) => {
     const name = (e.name || `${e.firstName || ''} ${e.lastName || ''}`).toLowerCase();
     const matchSearch = name.includes(search.toLowerCase()) || (e.email || '').toLowerCase().includes(search.toLowerCase());
-    const matchDept   = deptFilter === 'all' || deptName(e.department) === deptFilter;
+    const matchDept   = deptFilter === 'all' || e?.department?.id === deptFilter;
     const matchStatus = statusFilter === 'all' || e.status === statusFilter;
     return matchSearch && matchDept && matchStatus;
   });
@@ -159,37 +173,44 @@ export default function AdminEmployees() {
   const paginated  = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   const openAdd = () => {
+    setDetail(null);
     setEditing(null);
     setForm(emptyForm);
     setModalOpen(true);
   };
 
   const openEdit = (emp) => {
+    setDetail(null);
     setEditing(emp);
     setForm({
       firstName:  emp.firstName || emp.name?.split(' ')[0] || '',
       lastName:   emp.lastName  || emp.name?.split(' ').slice(1).join(' ') || '',
       email:      emp.email || '',
       phone:      emp.phone || '',
-      department: deptName(emp.department) || '',
+      department: emp.department?.id || '',
       position:   emp.position || emp.role || '',
-      salary:     emp.salary || '',
+      salary:     String(emp.baseSalary ?? emp.salary ?? ''),
       status:     emp.status || 'active',
     });
     setModalOpen(true);
   };
 
   const handleSave = async () => {
-    if (!form.firstName || !form.email) return;
+    if (!form.firstName?.trim() || !form.lastName?.trim() || !form.email?.trim()) {
+      alert(t('employees.requiredFields'));
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
-        name:       `${form.firstName} ${form.lastName}`.trim(),
-        email:      form.email,
+        firstName:  form.firstName.trim(),
+        lastName:   form.lastName.trim(),
+        email:      form.email.trim(),
         phone:      form.phone,
-        department: form.department,
+        departmentId: form.department || undefined,
         position:   form.position,
-        salary:     form.salary ? Number(form.salary) : undefined,
+        baseSalary: form.salary ? Number(form.salary) : undefined,
         status:     form.status,
       };
       if (editing) {
@@ -200,7 +221,7 @@ export default function AdminEmployees() {
       await load();
       setModalOpen(false);
     } catch (err) {
-      alert(err?.response?.data?.error || 'Failed to save employee');
+      alert(err?.message || t('employees.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -250,7 +271,7 @@ export default function AdminEmployees() {
           <SelectTrigger className="w-44"><SelectValue placeholder={t('employees.department')} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('employees.allDepts')}</SelectItem>
-            {departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+            {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.label}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
@@ -305,25 +326,25 @@ export default function AdminEmployees() {
                         </div>
                       </button>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{deptName(emp.department) || '–'}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{getDepartmentLabel(emp.department, t, { fallback: '–' })}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{emp.position || emp.role || '–'}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{emp.startDate || emp.createdAt?.slice(0, 10) || '–'}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{emp.hireDate || emp.startDate || emp.createdAt?.slice(0, 10) || '–'}</TableCell>
                     <TableCell>
                       <Badge className={statusBadge[emp.status] || statusBadge.active}>
-                        {emp.status || 'active'}
+                        {emp.status === 'inactive' ? t('employees.inactive') : t('employees.active')}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(emp)} title="Edit">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(emp)} title={t('employees.actionEdit')}>
                           <Pencil className="size-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleToggleStatus(emp)} title="Toggle status">
+                        <Button variant="ghost" size="icon" onClick={() => handleToggleStatus(emp)} title={t('employees.actionToggleStatus')}>
                           {emp.status === 'active'
                             ? <ToggleRight className="size-4 text-success" />
                             : <ToggleLeft  className="size-4 text-muted-foreground" />}
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(emp)} title="Delete">
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(emp)} title={t('employees.actionDelete')}>
                           <Trash2 className="size-3.5" />
                         </Button>
                       </div>
@@ -374,25 +395,30 @@ export default function AdminEmployees() {
               { label: t('employees.salary'), key: 'salary',   type: 'number' },
             ].map(({ label, key, type }) => (
               <div key={key} className="space-y-1.5">
-                <label className="text-sm font-medium">{label}</label>
+                <label className="text-sm font-medium text-foreground/90">{label}</label>
                 <Input
                   type={type}
                   value={form[key]}
+                  placeholder={label}
                   onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                 />
               </div>
             ))}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">{t('employees.deptLabel')}</label>
-              <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
+              <label className="text-sm font-medium text-foreground/90">{t('employees.deptLabel')}</label>
+              <Select
+                value={form.department || undefined}
+                onValueChange={(v) => setForm({ ...form, department: v === '__none__' ? '' : v })}
+              >
                 <SelectTrigger><SelectValue placeholder={t('employees.selectDept')} /></SelectTrigger>
                 <SelectContent>
-                  {departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  <SelectItem value="__none__">-</SelectItem>
+                  {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">{t('employees.statusLabel')}</label>
+              <label className="text-sm font-medium text-foreground/90">{t('employees.statusLabel')}</label>
               <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>

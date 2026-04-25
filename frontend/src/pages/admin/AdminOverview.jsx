@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Users, UserCheck, Clock, DollarSign, TrendingUp, TrendingDown,
 } from 'lucide-react';
@@ -7,52 +7,45 @@ import {
 } from 'recharts';
 import employeeService from '../../services/employeeService';
 import leaveService from '../../services/leaveService';
+import reportService from '../../services/reportService';
 import { useTheme } from './AdminLayout';
 import { useT } from '../../i18n/useT';
-
-// ── Mock payroll trend data ────────────────────────────────────────────────
-const payrollChartData = [
-  { week: 'W1', cost: 38000 },
-  { week: 'W2', cost: 42000 },
-  { week: 'W3', cost: 39500 },
-  { week: 'W4', cost: 45200 },
-];
-
-const recentActivity = {
-  EN: [
-    { id: 1, type: 'leave',      text: 'Maria Pop requested 3 days of vacation leave',              time: '10m ago' },
-    { id: 2, type: 'clock',      text: 'Ion Ionescu clocked in at 08:54',                           time: '1h ago' },
-    { id: 3, type: 'salary',     text: 'March payroll processed – 45.200 RON total',                time: '2h ago' },
-    { id: 4, type: 'employee',   text: 'New employee Elena Marin added to Engineering',              time: '3h ago' },
-    { id: 5, type: 'leave',      text: 'Leave request from Andrei Popa approved',                   time: '5h ago' },
-  ],
-  RO: [
-    { id: 1, type: 'leave',      text: 'Maria Pop a solicitat 3 zile de concediu',                  time: 'acum 10m' },
-    { id: 2, type: 'clock',      text: 'Ion Ionescu a intrat la 08:54',                              time: 'acum 1h' },
-    { id: 3, type: 'salary',     text: 'Salariile din Martie procesate – 45.200 RON total',         time: 'acum 2h' },
-    { id: 4, type: 'employee',   text: 'Angajat nou Elena Marin adăugată în Engineering',            time: 'acum 3h' },
-    { id: 5, type: 'leave',      text: 'Cererea de concediu a lui Andrei Popa a fost aprobată',     time: 'acum 5h' },
-  ],
-};
-
-const upcomingShifts = [
-  { name: 'Ion Ionescu',   role: 'Developer',   time: 'Today 09:00–17:00',   type: 'Morning' },
-  { name: 'Maria Pop',     role: 'Designer',    time: 'Today 10:00–18:00',   type: 'Morning' },
-  { name: 'Andrei Popa',   role: 'QA',          time: 'Tomorrow 14:00–22:00', type: 'Afternoon' },
-  { name: 'Elena Marin',   role: 'PM',          time: 'Tomorrow 09:00–17:00', type: 'Morning' },
-];
-
-const shiftColors = {
-  Morning:   'bg-primary/10 text-primary',
-  Afternoon: 'bg-warning/10 text-warning',
-  Night:     'bg-purple-100 text-purple-700',
-};
+import { getDepartmentLabel } from '../../utils/departmentLabel';
 
 function getInitials(name = '') {
-  return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+  return name.split(' ').map((part) => part[0]).join('').toUpperCase().slice(0, 2);
 }
 
-// ── KPI card ──────────────────────────────────────────────────────────────
+function formatDate(value, lang) {
+  if (!value) return '-';
+  return new Date(value).toLocaleDateString(lang === 'RO' ? 'ro-RO' : 'en-US');
+}
+
+function formatRon(value) {
+  return `${Number(value || 0).toLocaleString('ro-RO')} RON`;
+}
+
+function monthBounds(date) {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const start = new Date(year, month, 1);
+  const end = new Date(year, month + 1, 0);
+  return {
+    year,
+    month: month + 1,
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10),
+  };
+}
+
+function shiftBadgeClass(name = '') {
+  const normalized = String(name).toLowerCase();
+  if (normalized.includes('morning') || normalized.includes('dimine')) return 'bg-primary/10 text-primary';
+  if (normalized.includes('afternoon') || normalized.includes('dupa')) return 'bg-warning/10 text-warning';
+  if (normalized.includes('night') || normalized.includes('noapte')) return 'bg-blue-500/10 text-blue-500';
+  return 'bg-muted text-muted-foreground';
+}
+
 function KpiCard({ icon: Icon, label, value, delta, deltaPositive }) {
   return (
     <div className="bg-card border border-border rounded-lg p-5 flex flex-col gap-3">
@@ -62,9 +55,9 @@ function KpiCard({ icon: Icon, label, value, delta, deltaPositive }) {
           <Icon className="size-4 text-primary" />
         </div>
       </div>
-      <div className="flex items-end justify-between">
+      <div className="flex items-end justify-between gap-3">
         <span className="text-2xl font-semibold text-foreground">{value}</span>
-        {delta !== undefined && (
+        {delta ? (
           <div
             className={`flex items-center gap-0.5 text-xs font-medium ${
               deltaPositive ? 'text-success' : 'text-destructive'
@@ -73,94 +66,229 @@ function KpiCard({ icon: Icon, label, value, delta, deltaPositive }) {
             {deltaPositive ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
             {delta}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────
 export default function AdminOverview() {
   const { lang } = useTheme();
   const t = useT(lang);
-  const [stats, setStats] = useState({ total: '–', activeNow: '–', pendingLeave: '–', payroll: '–' });
+
   const [loading, setLoading] = useState(true);
+  const [employees, setEmployees] = useState([]);
+  const [pendingLeaves, setPendingLeaves] = useState([]);
+  const [stats, setStats] = useState({
+    total: '—',
+    activeNow: '—',
+    pendingLeave: '—',
+    payroll: '—',
+  });
+  const [deltas, setDeltas] = useState({
+    employees: '',
+    payroll: '',
+    payrollPositive: true,
+  });
+  const [payrollTrend, setPayrollTrend] = useState([]);
 
   useEffect(() => {
     const load = async () => {
+      setLoading(true);
+
       try {
-        const [empRes, leaveRes] = await Promise.all([
+        const now = new Date();
+        const current = monthBounds(now);
+        const previous = monthBounds(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+        const firstTrendMonth = monthBounds(new Date(now.getFullYear(), now.getMonth() - 5, 1));
+
+        const [empRes, leaveRes, currentSummaryRes, previousSummaryRes, trendSalaryRes] = await Promise.all([
           employeeService.getAll({ limit: 200 }),
           leaveService.getAll({ status: 'pending', limit: 100 }),
+          reportService.getSummary({ year: current.year, month: current.month }),
+          reportService.getSummary({ year: previous.year, month: previous.month }),
+          reportService.getSalary({ dateFrom: firstTrendMonth.start, dateTo: current.end }),
         ]);
-        const employees = empRes.data?.data ?? empRes.data?.employees ?? [];
-        const pending   = leaveRes.data?.data ?? leaveRes.data?.leaves ?? [];
-        const active    = employees.filter((e) => e.status === 'active').length;
 
-        // Rough payroll estimate
-        const totalPayroll = employees.reduce((sum, e) => sum + (Number(e.baseSalary) || Number(e.salary) || 0), 0);
+        const employeeList = empRes.data?.data ?? empRes.data?.employees ?? [];
+        const pendingList = leaveRes.data?.data ?? leaveRes.data?.leaves ?? [];
+        const currentSummary = currentSummaryRes.data?.data?.summary || {};
+        const previousSummary = previousSummaryRes.data?.data?.summary || {};
+        const salaryRows = trendSalaryRes.data?.data?.salaries ?? [];
 
-        setStats({
-          total:        employees.length,
-          activeNow:    active,
-          pendingLeave: pending.length,
-          payroll:      `${Math.round(totalPayroll).toLocaleString('ro-RO')} RON`,
+        const activeEmployees = Array.isArray(employeeList)
+          ? employeeList.filter((employee) => employee.status === 'active').length
+          : 0;
+        const newThisMonth = Array.isArray(employeeList)
+          ? employeeList.filter((employee) => {
+            const createdAt = String(employee.createdAt || '').slice(0, 10);
+            return createdAt >= current.start && createdAt <= current.end;
+          }).length
+          : 0;
+
+        const currentPayroll = Number(currentSummary.monthlyCosts || 0);
+        const previousPayroll = Number(previousSummary.monthlyCosts || 0);
+        const payrollDeltaPercent = previousPayroll > 0
+          ? ((currentPayroll - previousPayroll) / previousPayroll) * 100
+          : 0;
+
+        const trendMap = new Map();
+        salaryRows.forEach((row) => {
+          const key = `${row.year}-${String(row.month).padStart(2, '0')}`;
+          trendMap.set(key, (trendMap.get(key) || 0) + Number(row.grossSalary || 0));
         });
+
+        const chartRows = Array.from({ length: 6 }, (_, index) => {
+          const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
+          const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          return {
+            month: date.toLocaleString(lang === 'RO' ? 'ro-RO' : 'en-US', { month: 'short' }),
+            cost: Number((trendMap.get(key) || 0).toFixed(2)),
+          };
+        });
+
+        setEmployees(Array.isArray(employeeList) ? employeeList : []);
+        setPendingLeaves(Array.isArray(pendingList) ? pendingList : []);
+        setStats({
+          total: Array.isArray(employeeList) ? employeeList.length : 0,
+          activeNow: activeEmployees,
+          pendingLeave: Array.isArray(pendingList) ? pendingList.length : 0,
+          payroll: formatRon(currentPayroll),
+        });
+        setDeltas({
+          employees: newThisMonth > 0
+            ? `${newThisMonth > 0 ? '+' : ''}${newThisMonth} ${lang === 'RO' ? 'luna aceasta' : 'this month'}`
+            : '',
+          payroll: previousPayroll > 0
+            ? `${payrollDeltaPercent >= 0 ? '+' : ''}${payrollDeltaPercent.toFixed(1)}%`
+            : '',
+          payrollPositive: payrollDeltaPercent >= 0,
+        });
+        setPayrollTrend(chartRows);
       } catch {
-        setStats({ total: '–', activeNow: '–', pendingLeave: '–', payroll: '–' });
+        setEmployees([]);
+        setPendingLeaves([]);
+        setStats({ total: '—', activeNow: '—', pendingLeave: '—', payroll: '—' });
+        setDeltas({ employees: '', payroll: '', payrollPositive: true });
+        setPayrollTrend([]);
       } finally {
         setLoading(false);
       }
     };
+
     load();
-  }, []);
+  }, [lang]);
+
+  const recentActivity = useMemo(() => [
+    ...pendingLeaves.slice(0, 3).map((leave) => ({
+      id: `leave-${leave.id}`,
+      text: lang === 'RO'
+        ? `Cerere concediu: ${leave.employee?.firstName || ''} ${leave.employee?.lastName || ''}`.trim()
+        : `Leave request: ${leave.employee?.firstName || ''} ${leave.employee?.lastName || ''}`.trim(),
+      time: formatDate(leave.createdAt, lang),
+    })),
+    ...employees
+      .slice()
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, 2)
+      .map((employee) => ({
+        id: `employee-${employee.id}`,
+        text: lang === 'RO'
+          ? `Angajat: ${(employee.firstName || '').trim()} ${(employee.lastName || '').trim()} (${getDepartmentLabel(employee.department, t, { fallback: 'Fara departament' })})`
+          : `Employee: ${(employee.firstName || '').trim()} ${(employee.lastName || '').trim()} (${getDepartmentLabel(employee.department, t, { fallback: 'No department' })})`,
+        time: formatDate(employee.createdAt, lang),
+      })),
+  ].slice(0, 5), [pendingLeaves, employees, lang, t]);
+
+  const upcomingShifts = useMemo(() => employees
+    .filter((employee) => employee.shift)
+    .sort((a, b) => String(a.shift?.startTime || '').localeCompare(String(b.shift?.startTime || '')))
+    .slice(0, 5)
+    .map((employee) => ({
+      id: employee.id,
+      name: `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
+      role: employee.position || employee.role || '-',
+      time: `${employee.shift?.startTime?.slice(0, 5) || '--:--'}-${employee.shift?.endTime?.slice(0, 5) || '--:--'}`,
+      type: employee.shift?.name || 'Custom',
+    })), [employees]);
+
+  const annualRemaining = useMemo(
+    () => employees.reduce((sum, employee) => sum + (Number(employee.annualLeaveBalance) || 0), 0),
+    [employees]
+  );
+  const sickRemaining = useMemo(
+    () => employees.reduce((sum, employee) => sum + (Number(employee.sickLeaveBalance) || 0), 0),
+    [employees]
+  );
 
   const kpis = [
-    { icon: Users,    label: t('overview.totalEmployees'), value: stats.total,        delta: t('overview.thisMonth'),  deltaPositive: true },
-    { icon: UserCheck,label: t('overview.activeNow'),       value: stats.activeNow,   delta: undefined },
-    { icon: Clock,    label: t('overview.pendingLeave'),    value: stats.pendingLeave, delta: undefined },
-    { icon: DollarSign,label: t('overview.monthlyPayroll'),  value: stats.payroll,     delta: '+3.2%',          deltaPositive: true },
+    {
+      icon: Users,
+      label: t('overview.totalEmployees'),
+      value: stats.total,
+      delta: deltas.employees,
+      deltaPositive: true,
+    },
+    {
+      icon: UserCheck,
+      label: t('overview.activeNow'),
+      value: stats.activeNow,
+    },
+    {
+      icon: Clock,
+      label: t('overview.pendingLeave'),
+      value: stats.pendingLeave,
+    },
+    {
+      icon: DollarSign,
+      label: t('overview.monthlyPayroll'),
+      value: stats.payroll,
+      delta: deltas.payroll,
+      deltaPositive: deltas.payrollPositive,
+    },
   ];
 
   return (
     <div className="space-y-6 max-w-[1200px]">
       <h2 className="text-xl font-semibold">{t('overview.title')}</h2>
 
-      {/* KPI grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map((k) => (
-          <KpiCard key={k.label} {...k} />
+        {kpis.map((item) => (
+          <KpiCard key={item.label} {...item} />
         ))}
       </div>
 
-      {/* Middle row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Activity feed */}
         <div className="bg-card border border-border rounded-lg p-5">
           <h3 className="text-sm font-medium mb-4">{t('overview.recentActivity')}</h3>
-          <ul className="space-y-3">
-            {(recentActivity[lang] || recentActivity.RO).map((a) => (
-              <li key={a.id} className="flex items-start gap-3">
-                <div className="size-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <div className="size-1.5 rounded-full bg-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground">{a.text}</p>
-                  <p className="text-xs text-muted-foreground">{a.time}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {recentActivity.length === 0 && !loading ? (
+            <p className="text-sm text-muted-foreground">
+              {lang === 'RO' ? 'Nu exista activitate recenta.' : 'No recent activity.'}
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {recentActivity.map((item) => (
+                <li key={item.id} className="flex items-start gap-3">
+                  <div className="size-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <div className="size-1.5 rounded-full bg-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground">{item.text}</p>
+                    <p className="text-xs text-muted-foreground">{item.time}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        {/* Payroll chart */}
         <div className="bg-card border border-border rounded-lg p-5">
           <h3 className="text-sm font-medium mb-4">{t('overview.payrollCost')}</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={payrollChartData}>
+            <LineChart data={payrollTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis
-                dataKey="week"
+                dataKey="month"
                 tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
                 axisLine={{ stroke: 'var(--border)' }}
                 tickLine={false}
@@ -169,7 +297,7 @@ export default function AdminOverview() {
                 tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
                 axisLine={{ stroke: 'var(--border)' }}
                 tickLine={false}
-                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k RON`}
+                tickFormatter={(value) => `${(value / 1000).toFixed(0)}k RON`}
               />
               <Tooltip
                 contentStyle={{
@@ -192,65 +320,74 @@ export default function AdminOverview() {
         </div>
       </div>
 
-      {/* Bottom row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Upcoming shifts */}
         <div className="bg-card border border-border rounded-lg p-5">
           <h3 className="text-sm font-medium mb-4">{t('overview.upcomingShifts')}</h3>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left pb-2 text-xs text-muted-foreground font-medium">{t('overview.employee')}</th>
-                <th className="text-left pb-2 text-xs text-muted-foreground font-medium">{t('overview.time')}</th>
-                <th className="text-left pb-2 text-xs text-muted-foreground font-medium">{t('overview.type')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {upcomingShifts.map((s, i) => (
-                <tr key={i} className="border-b border-border last:border-0">
-                  <td className="py-2.5">
-                    <div className="flex items-center gap-2">
-                      <div className="size-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">
-                        {getInitials(s.name)}
-                      </div>
-                      <div>
-                        <p className="font-medium">{s.name}</p>
-                        <p className="text-xs text-muted-foreground">{s.role}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-2.5 text-muted-foreground text-xs">{s.time}</td>
-                  <td className="py-2.5">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${shiftColors[s.type] || 'bg-muted text-muted-foreground'}`}>
-                      {t(`overview.${s.type.toLowerCase()}`)}
-                    </span>
-                  </td>
+          {upcomingShifts.length === 0 && !loading ? (
+            <p className="text-sm text-muted-foreground">
+              {lang === 'RO' ? 'Nu exista schimburi alocate momentan.' : 'No assigned shifts at the moment.'}
+            </p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left pb-2 text-xs text-muted-foreground font-medium">{t('overview.employee')}</th>
+                  <th className="text-left pb-2 text-xs text-muted-foreground font-medium">{t('overview.time')}</th>
+                  <th className="text-left pb-2 text-xs text-muted-foreground font-medium">{t('overview.type')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {upcomingShifts.map((shift) => (
+                  <tr key={shift.id} className="border-b border-border last:border-0">
+                    <td className="py-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="size-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">
+                          {getInitials(shift.name)}
+                        </div>
+                        <div>
+                          <p className="font-medium">{shift.name}</p>
+                          <p className="text-xs text-muted-foreground">{shift.role}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-2.5 text-muted-foreground text-xs">{shift.time}</td>
+                    <td className="py-2.5">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${shiftBadgeClass(shift.type)}`}>
+                        {shift.type}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
-        {/* Leave summary */}
         <div className="bg-card border border-border rounded-lg p-5">
           <h3 className="text-sm font-medium mb-4">{t('overview.leaveSummary')}</h3>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {[
-              { label: t('overview.annualLeave'),  taken: 12, total: 21, color: 'bg-primary' },
-              { label: t('overview.sickLeave'),    taken: 3,  total: 10, color: 'bg-warning' },
-              { label: t('overview.unpaidLeave'),  taken: 1,  total: 5,  color: 'bg-muted-foreground' },
+              {
+                label: t('overview.annualLeave'),
+                value: `${annualRemaining.toLocaleString('ro-RO')} ${t('overview.days')}`,
+                tone: 'bg-primary/10 text-primary',
+              },
+              {
+                label: t('overview.sickLeave'),
+                value: `${sickRemaining.toLocaleString('ro-RO')} ${t('overview.days')}`,
+                tone: 'bg-warning/10 text-warning',
+              },
+              {
+                label: t('overview.pendingLeave'),
+                value: pendingLeaves.length.toLocaleString('ro-RO'),
+                tone: 'bg-muted text-muted-foreground',
+              },
             ].map((item) => (
-              <div key={item.label} className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">{item.label}</span>
-                  <span className="text-foreground font-medium">{item.taken}/{item.total} {t('overview.days')}</span>
-                </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${item.color}`}
-                    style={{ width: `${(item.taken / item.total) * 100}%` }}
-                  />
-                </div>
+              <div key={item.label} className="flex items-center justify-between rounded-lg border border-border bg-background px-4 py-3">
+                <span className="text-sm text-muted-foreground">{item.label}</span>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${item.tone}`}>
+                  {item.value}
+                </span>
               </div>
             ))}
           </div>

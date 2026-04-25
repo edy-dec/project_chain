@@ -7,6 +7,7 @@ const salaryService = {
   getByEmployee:    (userId, params)  => api.get(`/salary/employee/${userId}`, { params }),
   generate:         (userId, data)    => api.post(`/salary/generate/${userId}`, data),
   generateAll:      (data)            => api.post('/salary/generate-all', data),
+  payAll:           (data)            => api.post('/salary/pay-all', data),
   markAsPaid:       (id)              => api.patch(`/salary/${id}/paid`),
 };
 

@@ -11,6 +11,12 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       amount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+      appliesTo: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        defaultValue: 'All',
+        field: 'applies_to',
+      },
       description: { type: DataTypes.TEXT, allowNull: true },
       isRecurring: { type: DataTypes.BOOLEAN, defaultValue: true, field: 'is_recurring' },
       applicableFrom: {

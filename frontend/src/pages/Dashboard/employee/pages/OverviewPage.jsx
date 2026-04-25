@@ -65,7 +65,7 @@ export default function OverviewPage() {
       iconColor: 'text-amber-400',
     },
     {
-      label: t('empOverview.attRate'),
+      label: t('empOverview.attendanceRate'),
       value: loading ? '—' : `${attRate}%`,
       sub: `${presentDays} / ${wdThisMonth} ${t('empOverview.daysPresent')}`,
       subColor: 'text-dash-text-muted',

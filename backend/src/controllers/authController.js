@@ -41,4 +41,14 @@ const getMe = async (req, res, next) => {
   }
 };
 
-module.exports = { syncUser, getMe };
+const updateMe = async (req, res, next) => {
+  try {
+    const updated = await userService.updateOwnProfile(req.currentUser.id, req.body || {});
+    const user = await userService.findById(updated.id);
+    return success(res, { user }, 'Profile updated successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { syncUser, getMe, updateMe };
