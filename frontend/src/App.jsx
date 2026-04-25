@@ -5,6 +5,8 @@ import Spinner from './components/common/Spinner';
 
 // ── Lazy pages ───────────────────────────────────────────────────────────────
 const LandingPage     = lazy(() => import('./pages/Landing/LandingPage'));
+const PlatformOverviewPage = lazy(() => import('./pages/Landing/PlatformOverviewPage'));
+const DemoRequestPage = lazy(() => import('./pages/Landing/DemoRequestPage'));
 
 const DashboardLayout  = lazy(() => import('./pages/Dashboard/employee/DashboardLayout'));
 const OverviewPage     = lazy(() => import('./pages/Dashboard/employee/pages/OverviewPage'));
@@ -22,6 +24,7 @@ const AdminEmployees = lazy(() => import('./pages/admin/AdminEmployees'));
 const AdminShifts    = lazy(() => import('./pages/admin/AdminShifts'));
 const AdminLeave     = lazy(() => import('./pages/admin/AdminLeave'));
 const AdminBonuses   = lazy(() => import('./pages/admin/AdminBonuses'));
+const AdminDemoRequests = lazy(() => import('./pages/admin/AdminDemoRequests'));
 const AdminReports   = lazy(() => import('./pages/admin/AdminReports'));
 const AdminSettings  = lazy(() => import('./pages/admin/AdminSettings'));
 
@@ -69,6 +72,8 @@ const AppRoutes = () => (
   <Suspense fallback={<Spinner fullscreen />}>
     <Routes>
       <Route path="/" element={<HomeRoute />} />
+      <Route path="/platform-overview" element={<PlatformOverviewPage />} />
+      <Route path="/request-demo" element={<DemoRequestPage />} />
 
       {/* Employee dashboard */}
       <Route element={<PrivateRoute><EmployeeRoute><DashboardLayout /></EmployeeRoute></PrivateRoute>}>
@@ -89,6 +94,7 @@ const AppRoutes = () => (
         <Route path="admin/shifts"    element={<AdminShifts />} />
         <Route path="admin/leave"     element={<AdminLeave />} />
         <Route path="admin/bonuses"   element={<AdminBonuses />} />
+        <Route path="admin/demo-requests" element={<AdminDemoRequests />} />
         <Route path="admin/reports"   element={<AdminReports />} />
         <Route path="admin/settings"  element={<AdminSettings />} />
       </Route>

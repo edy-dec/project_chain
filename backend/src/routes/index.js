@@ -7,6 +7,8 @@ const salaryRoutes     = require('./salaryRoutes');
 const shiftRoutes      = require('./shiftRoutes');
 const reportRoutes     = require('./reportRoutes');
 const chatbotRoutes    = require('./chatbotRoutes');
+const demoRequestRoutes = require('./demoRequestRoutes');
+const newsletterRoutes = require('./newsletterRoutes');
 const settingsRoutes   = require('./settingsRoutes');
 const bonusRoutes      = require('./bonusRoutes');
 
@@ -20,6 +22,8 @@ router.use('/salary',      salaryRoutes);
 router.use('/shifts',      shiftRoutes);
 router.use('/reports',     reportRoutes);
 router.use('/chatbot',     chatbotRoutes);
+router.use('/demo-requests', demoRequestRoutes);
+router.use('/newsletter',  newsletterRoutes);
 router.use('/settings',    settingsRoutes);
 router.use('/bonuses',     bonusRoutes);
 

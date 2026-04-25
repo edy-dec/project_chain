@@ -8,8 +8,9 @@ const Leave = require('./Leave')(sequelize);
 const Salary = require('./Salary')(sequelize);
 const Bonus = require('./Bonus')(sequelize);
 const AppSetting = require('./AppSetting')(sequelize);
+const DemoRequest = require('./DemoRequest')(sequelize);
 
-const models = { User, Department, Shift, Attendance, Leave, Salary, Bonus, AppSetting };
+const models = { User, Department, Shift, Attendance, Leave, Salary, Bonus, AppSetting, DemoRequest };
 
 // Run associations
 Object.values(models).forEach((model) => {

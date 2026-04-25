@@ -9,6 +9,7 @@ import {
   Gift,
   BarChart2,
   Settings,
+  Inbox,
   ChevronLeft,
   ChevronRight,
   Bell,
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   { key: 'nav.shifts',    to: '/admin/shifts',    icon: Calendar },
   { key: 'nav.leave',     to: '/admin/leave',     icon: FileText },
   { key: 'nav.bonuses',   to: '/admin/bonuses',   icon: Gift },
+  { key: 'nav.demoRequests', to: '/admin/demo-requests', icon: Inbox },
   { key: 'nav.reports',   to: '/admin/reports',   icon: BarChart2 },
   { key: 'nav.settings',  to: '/admin/settings',  icon: Settings },
 ];
