@@ -5,6 +5,11 @@ import { TrendingUp } from 'lucide-react';
 import settingsService from '../../../../services/settingsService';
 import { useAuth } from '../../../../context/AuthContext';
 
+const normalizePaydayDay = (value, fallback = 10) => {
+  const day = Number(value);
+  return Number.isInteger(day) && day >= 1 && day <= 28 ? day : fallback;
+};
+
 export function SalaryCard({ salary, loading }) {
   const { theme, lang } = useTheme();
   const t = useT(lang);
@@ -14,7 +19,7 @@ export function SalaryCard({ salary, loading }) {
   useEffect(() => {
     settingsService.get()
       .then((res) => {
-        const configuredDay = Number(res.data?.data?.settings?.general?.paydayDay || 10);
+        const configuredDay = normalizePaydayDay(res.data?.data?.settings?.general?.paydayDay);
         setPaydayDay(configuredDay);
       })
       .catch(() => setPaydayDay(10));
@@ -36,11 +41,13 @@ export function SalaryCard({ salary, loading }) {
   ] : [];
 
   const now = new Date();
-  const nextPaymentDate = now.getDate() <= paydayDay
-    ? new Date(now.getFullYear(), now.getMonth(), paydayDay)
-    : new Date(now.getFullYear(), now.getMonth() + 1, paydayDay);
-  const nextPayment = nextPaymentDate
-    .toLocaleDateString(lang === 'RO' ? 'ro-RO' : 'en-US', { month: 'short', day: 'numeric' });
+  const safePaydayDay = normalizePaydayDay(paydayDay);
+  const nextPaymentDate = now.getDate() <= safePaydayDay
+    ? new Date(now.getFullYear(), now.getMonth(), safePaydayDay)
+    : new Date(now.getFullYear(), now.getMonth() + 1, safePaydayDay);
+  const nextPayment = Number.isNaN(nextPaymentDate.getTime())
+    ? '—'
+    : nextPaymentDate.toLocaleDateString(lang === 'RO' ? 'ro-RO' : 'en-US', { month: 'short', day: 'numeric' });
 
   return (
     <div className="bg-dash-card border border-dash-border rounded-xl p-5 flex flex-col gap-4 transition-colors duration-200">

@@ -19,6 +19,44 @@ const DEFAULT_SETTINGS = {
 };
 
 class SettingsService {
+  sanitizeSettingsForRead(settings) {
+    const safe = structuredClone(settings || DEFAULT_SETTINGS);
+    const defaultGeneral = DEFAULT_SETTINGS.general;
+    const defaultNotifications = DEFAULT_SETTINGS.notifications;
+    const defaultLeavePolicy = DEFAULT_SETTINGS.leavePolicy;
+
+    const companyName = String(safe.general?.companyName || '').trim();
+    const timezone = String(safe.general?.timezone || '').trim();
+    const currency = String(safe.general?.currency || '').trim().toUpperCase();
+    const paydayDay = Number(safe.general?.paydayDay);
+    const maxAnnualLeaveDays = Number(safe.leavePolicy?.maxAnnualLeaveDays);
+
+    safe.general = {
+      companyName: companyName || defaultGeneral.companyName,
+      timezone: timezone || defaultGeneral.timezone,
+      currency: ['RON', 'EUR', 'USD', 'GBP'].includes(currency) ? currency : defaultGeneral.currency,
+      paydayDay: Number.isInteger(paydayDay) && paydayDay >= 1 && paydayDay <= 28
+        ? paydayDay
+        : defaultGeneral.paydayDay,
+    };
+
+    safe.notifications = {
+      emailNotifications: Boolean(safe.notifications?.emailNotifications ?? defaultNotifications.emailNotifications),
+      slackNotifications: Boolean(safe.notifications?.slackNotifications ?? defaultNotifications.slackNotifications),
+    };
+
+    safe.leavePolicy = {
+      maxAnnualLeaveDays: Number.isInteger(maxAnnualLeaveDays) && maxAnnualLeaveDays >= 0 && maxAnnualLeaveDays <= 365
+        ? maxAnnualLeaveDays
+        : defaultLeavePolicy.maxAnnualLeaveDays,
+      autoApproveShortLeave: Boolean(safe.leavePolicy?.autoApproveShortLeave ?? defaultLeavePolicy.autoApproveShortLeave),
+    };
+
+    safe.bonusOverrides = this.sanitizeBonusOverrides(safe.bonusOverrides);
+
+    return safe;
+  }
+
   sanitizeBonusOverrides(raw) {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
 
@@ -98,7 +136,7 @@ class SettingsService {
     existing.forEach((entry) => {
       settings[entry.key] = { ...(settings[entry.key] || {}), ...(entry.value || {}) };
     });
-    return settings;
+    return this.sanitizeSettingsForRead(settings);
   }
 
   async updateSettings(partialSettings = {}) {

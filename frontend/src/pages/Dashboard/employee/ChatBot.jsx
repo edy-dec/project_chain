@@ -69,7 +69,7 @@ export function ChatBot() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-dash-primary text-white shadow-lg flex items-center justify-center hover:bg-dash-primary/90 transition-colors z-50"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-12 h-12 rounded-full bg-dash-primary text-white shadow-lg flex items-center justify-center hover:bg-dash-primary/90 transition-colors z-50"
         >
           <Bot size={22} />
         </button>
@@ -77,7 +77,7 @@ export function ChatBot() {
 
       {/* Chat Window */}
       {open && (
-        <div className="fixed bottom-6 right-6 w-80 bg-dash-card border border-dash-border rounded-xl shadow-xl flex flex-col z-50 overflow-hidden" style={{ height: '420px' }}>
+        <div className="fixed bottom-4 right-2 left-2 sm:left-auto sm:bottom-6 sm:right-6 sm:w-80 bg-dash-card border border-dash-border rounded-xl shadow-xl flex flex-col z-50 overflow-hidden" style={{ height: '420px' }}>
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-dash-border bg-dash-primary/10">
             <div className="flex items-center gap-2">

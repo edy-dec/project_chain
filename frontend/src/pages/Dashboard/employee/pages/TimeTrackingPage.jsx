@@ -102,21 +102,21 @@ export default function TimeTrackingPage() {
   return (
     <div className="flex flex-col min-h-full bg-dash-bg">
       <TopNav title={t('timeTracking.title')} />
-      <main className="flex-1 p-6 space-y-6">
+      <main className="flex-1 p-4 sm:p-6 space-y-6">
 
         {/* Clock card */}
-        <div className="bg-dash-card border border-dash-border rounded-xl p-6 flex flex-col items-center gap-4">
+        <div className="bg-dash-card border border-dash-border rounded-xl p-4 sm:p-6 flex flex-col items-center gap-4">
           <div className="flex items-center gap-2 text-dash-text-muted" style={{ fontSize: '13px' }}>
             <Clock size={16} />
             <span>{now.toLocaleDateString('ro-RO', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
           </div>
-          <p className="text-dash-text tabular-nums" style={{ fontSize: '48px', fontWeight: 700 }}>
+          <p className="text-dash-text tabular-nums text-center" style={{ fontSize: 'clamp(2rem, 8vw, 48px)', fontWeight: 700 }}>
             {now.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </p>
 
           {/* Today summary */}
           {isCheckedIn && (
-            <div className="flex gap-6 text-center">
+            <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-center">
               <div>
                 <p className="text-dash-text-muted" style={{ fontSize: '11px' }}>Check-In</p>
                 <p className="text-dash-text" style={{ fontSize: '14px', fontWeight: 600 }}>{fmt(today.checkIn)}</p>
@@ -137,7 +137,7 @@ export default function TimeTrackingPage() {
           )}
 
           {/* Action buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             {!isCheckedOut && (
               <button
                 onClick={handleClock}
@@ -196,7 +196,7 @@ export default function TimeTrackingPage() {
             <div className="px-5 py-8 text-center text-dash-text-muted" style={{ fontSize: '13px' }}>{t('timeTracking.noRecords')}</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[720px]">
                 <thead>
                   <tr className="border-b border-dash-border">
                     {[t('timeTracking.date'), 'Check-In', 'Check-Out', t('timeTracking.totalHrs'), t('timeTracking.extraHrs'), t('timeTracking.status')].map((h) => (

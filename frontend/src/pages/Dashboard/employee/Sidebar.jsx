@@ -39,16 +39,27 @@ const ADMIN_NAV = [
 
 export function Sidebar({ collapsed, onToggle }) {
   const { isAdminOrManager } = useAuth();
-  const { lang } = useTheme();
+  const { lang, mobileSidebarOpen, closeMobileSidebar } = useTheme();
   const t = useT(lang);
   const navItems = NAV;
   const adminNavItems = ADMIN_NAV;
 
   return (
-    <aside
-      className="fixed left-0 top-0 h-screen bg-dash-sidebar border-r border-dash-border flex flex-col z-40 transition-all duration-300"
-      style={{ width: collapsed ? '64px' : '240px' }}
-    >
+    <>
+      {mobileSidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={closeMobileSidebar}
+        />
+      )}
+      <aside
+        className={`fixed left-0 top-0 h-screen bg-dash-sidebar border-r border-dash-border flex flex-col z-40 transition-all duration-300 md:translate-x-0 ${
+          mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        style={{ width: window.innerWidth < 768 ? '240px' : (collapsed ? '64px' : '240px') }}
+      >
       {/* Logo + collapse button */}
       <div className="h-14 flex items-center border-b border-dash-border px-3 gap-2">
         {/* Logo — hidden when collapsed */}
@@ -71,7 +82,7 @@ export function Sidebar({ collapsed, onToggle }) {
         <button
           onClick={onToggle}
           title={collapsed ? t('sidebar.expandMenu') : t('sidebar.collapseMenu')}
-          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-dash-text-muted hover:bg-dash-sidebar-hover hover:text-dash-text transition-colors"
+          className="hidden md:flex shrink-0 w-7 h-7 items-center justify-center rounded-md text-dash-text-muted hover:bg-dash-sidebar-hover hover:text-dash-text transition-colors"
         >
           {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
         </button>
@@ -89,6 +100,7 @@ export function Sidebar({ collapsed, onToggle }) {
             key={item.to}
             to={item.to}
             end={item.end}
+            onClick={closeMobileSidebar}
             title={collapsed ? t(item.key) : undefined}
             className={({ isActive }) =>
               `relative flex items-center gap-3 rounded-md transition-colors duration-150 ${
@@ -130,6 +142,7 @@ export function Sidebar({ collapsed, onToggle }) {
               <NavLink
                 key={item.to}
                 to={item.to}
+                onClick={closeMobileSidebar}
                 title={collapsed ? t(item.key) : undefined}
                 className={({ isActive }) =>
                   `relative flex items-center gap-3 rounded-md transition-colors duration-150 ${
@@ -168,6 +181,7 @@ export function Sidebar({ collapsed, onToggle }) {
           </p>
         </div>
       )}
-    </aside>
+      </aside>
+    </>
   );
 }

@@ -41,7 +41,7 @@ export default function HistoryPage() {
   return (
     <div className="flex flex-col min-h-full bg-dash-bg">
       <TopNav title={t('history.title')} />
-      <main className="p-6 space-y-5">
+      <main className="p-4 sm:p-6 space-y-5">
 
         {/* Filters */}
         <div className="flex flex-wrap gap-3">
@@ -55,7 +55,7 @@ export default function HistoryPage() {
               style={{ fontSize: '13px' }}
             />
           </div>
-          <div className="flex items-center gap-1.5 bg-dash-card border border-dash-border rounded-lg px-2">
+          <div className="flex items-center gap-1.5 bg-dash-card border border-dash-border rounded-lg px-2 overflow-x-auto max-w-full">
             <Filter size={13} className="text-dash-text-muted" />
             {TYPES.map((tp) => (
               <button

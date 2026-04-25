@@ -533,7 +533,7 @@ export default function AdminReports() {
         </div>
 
         <div className="bg-card border border-border rounded-lg">
-          <Table>
+          <Table className="min-w-[680px]">
             <TableHeader>
               <TableRow>
                 <TableHead>{t('reports.employee')}</TableHead>
@@ -602,7 +602,7 @@ export default function AdminReports() {
         </div>
 
         <div className="bg-card border border-border rounded-lg">
-          <Table>
+          <Table className="min-w-[860px]">
             <TableHeader>
               <TableRow>
                 <TableHead>{t('reports.employee')}</TableHead>

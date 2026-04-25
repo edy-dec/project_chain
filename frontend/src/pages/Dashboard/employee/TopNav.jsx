@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from './ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useT } from '../../../i18n/useT';
-import { Sun, Moon, Bell, ChevronDown, LogOut, User, Globe } from 'lucide-react';
+import { Sun, Moon, Bell, ChevronDown, LogOut, User, Globe, Menu } from 'lucide-react';
 
 const NOTIFS = {
   RO: [
@@ -18,7 +18,7 @@ const NOTIFS = {
 };
 
 export function TopNav({ title }) {
-  const { theme, toggleTheme, lang, toggleLang } = useTheme();
+  const { theme, toggleTheme, lang, toggleLang, toggleMobileSidebar } = useTheme();
   const t = useT(lang);
   const { currentUser, logout } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -43,12 +43,21 @@ export function TopNav({ title }) {
   }, []);
 
   return (
-    <div className="h-14 flex items-center justify-between px-6 bg-dash-card border-b border-dash-border sticky top-0 z-30 transition-colors duration-200">
+    <div className="h-14 flex items-center justify-between px-4 sm:px-6 bg-dash-card border-b border-dash-border sticky top-0 z-30 transition-colors duration-200 gap-3">
       {/* Title */}
-      <h1 className="text-dash-text" style={{ fontSize: '16px', fontWeight: 600 }}>{title}</h1>
+      <div className="flex items-center gap-2 min-w-0">
+        <button
+          onClick={toggleMobileSidebar}
+          className="md:hidden w-8 h-8 flex items-center justify-center rounded-md text-dash-text-secondary hover:bg-dash-sidebar-hover hover:text-dash-text transition-colors shrink-0"
+          title="Menu"
+        >
+          <Menu size={18} />
+        </button>
+        <h1 className="text-dash-text truncate" style={{ fontSize: '16px', fontWeight: 600 }}>{title}</h1>
+      </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
 
         {/* Theme Toggle */}
         <button
@@ -81,7 +90,7 @@ export function TopNav({ title }) {
             )}
           </button>
           {notifOpen && (
-            <div className="absolute right-0 top-10 bg-dash-card border border-dash-border rounded-lg shadow-lg z-50" style={{ width: '300px' }}>
+            <div className="absolute right-0 top-10 bg-dash-card border border-dash-border rounded-lg shadow-lg z-50 w-[calc(100vw-1.5rem)] max-w-[300px]">
               <div className="flex items-center justify-between px-4 py-3 border-b border-dash-border">
                 <p className="text-dash-text" style={{ fontSize: '13px', fontWeight: 600 }}>
                   {t('topnav.notifications')}
@@ -126,12 +135,12 @@ export function TopNav({ title }) {
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => { setUserMenuOpen((v) => !v); setNotifOpen(false); }}
-            className="flex items-center gap-2 pl-2 pr-1.5 py-1 rounded-md hover:bg-dash-sidebar-hover transition-colors"
+            className="flex items-center gap-2 pl-1.5 sm:pl-2 pr-1.5 py-1 rounded-md hover:bg-dash-sidebar-hover transition-colors"
           >
             <div className="w-7 h-7 rounded-full bg-dash-primary text-white flex items-center justify-center" style={{ fontSize: '11px', fontWeight: 700 }}>
               {initials}
             </div>
-            <span className="text-dash-text-secondary" style={{ fontSize: '13px' }}>
+            <span className="hidden sm:inline text-dash-text-secondary" style={{ fontSize: '13px' }}>
               {name.split(' ')[0]}
             </span>
             <ChevronDown size={14} className="text-dash-text-muted" />

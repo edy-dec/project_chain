@@ -111,7 +111,7 @@ export default function AdminLeave() {
       <h2 className="text-xl font-semibold">{t('adminLeave.title')}</h2>
 
       {/* Filter tabs */}
-      <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5 w-fit">
+      <div className="flex flex-wrap items-center gap-1 bg-muted rounded-lg p-0.5 w-full sm:w-fit">
         {['all', 'pending', 'approved', 'rejected'].map((tab) => (
           <button
             key={tab}
@@ -127,7 +127,7 @@ export default function AdminLeave() {
 
       {/* Bulk actions */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg p-3">
+        <div className="flex flex-wrap items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg p-3">
           <span className="text-sm">{selected.size} {t('adminLeave.selected')}</span>
           <Button size="sm" className="bg-success hover:bg-success/90 text-white" onClick={bulkApprove}>
             {t('adminLeave.approveSelected')}
@@ -140,7 +140,7 @@ export default function AdminLeave() {
 
       {/* Table */}
       <div className="bg-card border border-border rounded-lg">
-        <Table>
+        <Table className="min-w-[980px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-10">
@@ -221,7 +221,7 @@ export default function AdminLeave() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             {t('adminLeave.showing')} {(page - 1) * ITEMS_PER_PAGE + 1}–{Math.min(page * ITEMS_PER_PAGE, filtered.length)} {t('adminLeave.of')} {filtered.length}
           </p>
@@ -259,7 +259,7 @@ export default function AdminLeave() {
                   {detail.status}
                 </Badge>
               </div>
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 {[
                   [t('adminLeave.startDate'),  detail.startDate?.slice(0, 10)],
                   [t('adminLeave.endDate'),    detail.endDate?.slice(0, 10)],

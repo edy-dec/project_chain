@@ -92,10 +92,10 @@ export default function LeavePage() {
   return (
     <div className="flex flex-col min-h-full bg-dash-bg">
       <TopNav title={tFn('empLeave.title')} />
-      <main className="p-6 space-y-6">
+      <main className="p-4 sm:p-6 space-y-6">
 
         {/* Balance cards */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { label: tFn('empLeave.totalAnnual'),   value: loading ? '...' : `${TOTAL_ANNUAL} ${tFn('empLeave.days')}` },
             { label: tFn('empLeave.daysTaken'),        value: loading ? '...' : typeof taken === 'number' ? `${taken} ${tFn('empLeave.days')}` : '—' },
@@ -116,11 +116,11 @@ export default function LeavePage() {
 
         {/* Requests table */}
         <div className="bg-dash-card border border-dash-border rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-dash-border">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-4 border-b border-dash-border">
             <h3 className="text-dash-text" style={{ fontSize: '14px', fontWeight: 600 }}>{tFn('empLeave.requests')}</h3>
             <button
               onClick={() => { setSubmitError(null); setShowModal(true); }}
-              className="flex items-center gap-1.5 bg-dash-primary text-white px-3 py-1.5 rounded-lg hover:bg-dash-primary/90 transition-colors"
+              className="flex items-center justify-center gap-1.5 bg-dash-primary text-white px-3 py-1.5 rounded-lg hover:bg-dash-primary/90 transition-colors w-full sm:w-auto"
               style={{ fontSize: '13px', fontWeight: 500 }}
             >
               <Plus size={14} />
@@ -133,7 +133,7 @@ export default function LeavePage() {
             <div className="px-5 py-8 text-center text-dash-text-muted" style={{ fontSize: '13px' }}>{tFn('empLeave.noRequests')}</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[720px]">
                 <thead>
                   <tr className="border-b border-dash-border">
                     {[tFn('empLeave.type'), tFn('empLeave.from'), tFn('empLeave.to'), tFn('empLeave.daysCol'), tFn('empLeave.statusCol'), tFn('empLeave.reason')].map((h) => (
@@ -174,8 +174,8 @@ export default function LeavePage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-dash-card border border-dash-border rounded-2xl w-full max-w-md mx-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-dash-card border border-dash-border rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-dash-border">
               <h3 className="text-dash-text" style={{ fontSize: '15px', fontWeight: 600 }}>{tFn('empLeave.leaveRequest')}</h3>
               <button onClick={() => setShowModal(false)} className="text-dash-text-muted hover:text-dash-text transition-colors">
@@ -194,7 +194,7 @@ export default function LeavePage() {
                   {LEAVE_TYPES_T.map((lt) => <option key={lt.value} value={lt.value}>{lt.label}</option>)}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-dash-text-muted mb-1.5" style={{ fontSize: '12px', fontWeight: 500 }}>{tFn('empLeave.from')}</label>
                   <input type="date" required value={form.from} onChange={(e) => setForm((f) => ({ ...f, from: e.target.value }))}
@@ -216,7 +216,7 @@ export default function LeavePage() {
               {submitError && (
                 <p className="text-red-400" style={{ fontSize: '12px' }}>{submitError}</p>
               )}
-              <div className="flex gap-3 pt-1">
+              <div className="flex flex-col-reverse sm:flex-row gap-3 pt-1">
                 <button type="button" onClick={() => setShowModal(false)}
                   className="flex-1 py-2 rounded-lg border border-dash-border text-dash-text-secondary hover:bg-dash-sidebar-hover transition-colors" style={{ fontSize: '13px' }}>
                   {tFn('empLeave.cancel')}

@@ -10,6 +10,7 @@ import {
   BarChart2,
   Settings,
   Inbox,
+  Menu,
   ChevronLeft,
   ChevronRight,
   Bell,
@@ -73,6 +74,8 @@ const buildNotifications = (lang, t, employees = [], pendingLeaves = []) => {
 // ── Main Layout ────────────────────────────────────────────────────────────
 export default function AdminLayout() {
   const [collapsed, setCollapsed]         = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile]           = useState(() => window.innerWidth < 768);
   const [dark, setDark]                   = useState(() => localStorage.getItem('chain-theme') === 'dark');
   const [lang, setLang]                   = useState(() => localStorage.getItem('chain-lang') || 'RO');
   const [profileOpen, setProfileOpen]     = useState(false);
@@ -95,6 +98,16 @@ export default function AdminLayout() {
     }
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const onResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) setMobileSidebarOpen(false);
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
   useEffect(() => {
@@ -140,11 +153,21 @@ export default function AdminLayout() {
   return (
     <ThemeCtx.Provider value={{ dark, toggleDark, lang, toggleLang }}>
       <div className="flex h-screen bg-background text-foreground overflow-hidden">
+        {mobileSidebarOpen && (
+          <button
+            type="button"
+            aria-label="Close sidebar"
+            className="fixed inset-0 z-30 bg-black/40 md:hidden"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+        )}
         {/* ── Sidebar ── */}
         <aside
           className={cn(
-            'flex flex-col h-full bg-sidebar border-r border-sidebar-border transition-all duration-200 shrink-0',
-            collapsed ? 'w-16' : 'w-56'
+            'fixed inset-y-0 left-0 z-40 flex flex-col h-full bg-sidebar border-r border-sidebar-border transition-all duration-200 shrink-0 md:translate-x-0',
+            isMobile
+              ? `w-56 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+              : collapsed ? 'w-16' : 'w-56'
           )}
         >
           {/* Logo */}
@@ -161,7 +184,7 @@ export default function AdminLayout() {
             </div>
             <button
               onClick={() => setCollapsed(!collapsed)}
-              className="ml-auto p-1 rounded hover:bg-sidebar-accent text-muted-foreground hover:text-sidebar-foreground transition-colors shrink-0"
+              className="ml-auto hidden md:block p-1 rounded hover:bg-sidebar-accent text-muted-foreground hover:text-sidebar-foreground transition-colors shrink-0"
               title={collapsed ? t('layout.expand') : t('layout.collapse')}
             >
               {collapsed ? (
@@ -179,6 +202,7 @@ export default function AdminLayout() {
                 key={item.to}
                 to={item.to}
                 end={item.end}
+                onClick={() => setMobileSidebarOpen(false)}
                 className={({ isActive }) =>
                   cn(
                     'relative flex items-center gap-3 h-9 px-3 mx-2 rounded-md text-sm transition-colors',
@@ -222,11 +246,21 @@ export default function AdminLayout() {
         </aside>
 
         {/* ── Main area ── */}
-        <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+        <div
+          className="flex flex-col flex-1 min-w-0 overflow-hidden"
+          style={{ marginLeft: isMobile ? 0 : (collapsed ? 64 : 224) }}
+        >
           {/* Top Nav */}
-          <header className="flex items-center h-14 px-4 border-b border-border bg-card shrink-0 gap-3">
+          <header className="flex items-center h-14 px-3 sm:px-4 border-b border-border bg-card shrink-0 gap-2 sm:gap-3">
+            <button
+              onClick={() => setMobileSidebarOpen((value) => !value)}
+              className="md:hidden p-2 rounded-md hover:bg-accent text-muted-foreground"
+              title="Menu"
+            >
+              <Menu className="size-4" />
+            </button>
             {/* Page title auto via breadcrumb - just show company */}
-            <span className="text-sm font-medium text-muted-foreground">Chain Technologies SRL</span>
+            <span className="hidden sm:inline text-sm font-medium text-muted-foreground">Chain Technologies SRL</span>
             <div className="flex-1" />
 
             {/* Notifications */}
@@ -242,7 +276,7 @@ export default function AdminLayout() {
                 )}
               </button>
               {notifOpen && (
-                <div className="absolute right-0 top-full mt-1 w-80 bg-card border border-border rounded-lg shadow-lg z-50">
+                <div className="absolute right-0 top-full mt-1 w-[calc(100vw-1.5rem)] max-w-80 bg-card border border-border rounded-lg shadow-lg z-50">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                     <p className="text-sm font-semibold">{t('layout.notifications')}</p>
                     {unreadCount > 0 && (
@@ -296,7 +330,7 @@ export default function AdminLayout() {
               title={lang === 'RO' ? t('layout.switchEN') : t('layout.switchRO')}
             >
               <Globe className="size-4" />
-              {lang}
+              <span className="hidden sm:inline">{lang}</span>
             </button>
 
             {/* Avatar dropdown */}
@@ -329,7 +363,7 @@ export default function AdminLayout() {
           </header>
 
           {/* Page content */}
-          <main className="flex-1 overflow-y-auto p-6 bg-background">
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-background">
             <Outlet />
           </main>
         </div>

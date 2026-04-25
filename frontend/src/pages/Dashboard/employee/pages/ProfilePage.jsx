@@ -90,10 +90,10 @@ export default function ProfilePage() {
   return (
     <div className="flex flex-col min-h-full bg-dash-bg">
       <TopNav title={t('profile.title')} />
-      <main className="p-6 space-y-6 max-w-2xl">
+      <main className="p-4 sm:p-6 space-y-6 max-w-2xl">
 
         {/* Avatar card */}
-        <div className="bg-dash-card border border-dash-border rounded-xl p-6 flex items-center gap-5">
+        <div className="bg-dash-card border border-dash-border rounded-xl p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
           <div className="w-20 h-20 rounded-2xl bg-dash-primary flex items-center justify-center text-white shrink-0" style={{ fontSize: '28px', fontWeight: 700 }}>
             {initials}
           </div>

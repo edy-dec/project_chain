@@ -78,7 +78,7 @@ export default function OverviewPage() {
   return (
     <div className="flex flex-col min-h-full bg-dash-bg">
       <TopNav title={t('empOverview.title')} />
-      <main className="flex-1 p-6 space-y-6">
+      <main className="flex-1 p-4 sm:p-6 space-y-6">
         <KPIRow cards={kpiCards} />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <TimeTrackingCard weekAtt={weekAtt} todayAtt={todayAtt} loading={loading} />

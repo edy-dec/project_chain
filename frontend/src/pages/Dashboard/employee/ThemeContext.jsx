@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-const ThemeContext = createContext({ theme: 'light', toggleTheme: () => {}, lang: 'RO', toggleLang: () => {} });
+const ThemeContext = createContext({
+  theme: 'light',
+  toggleTheme: () => {},
+  lang: 'RO',
+  toggleLang: () => {},
+  mobileSidebarOpen: false,
+  toggleMobileSidebar: () => {},
+  closeMobileSidebar: () => {},
+});
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
@@ -16,6 +24,7 @@ export function ThemeProvider({ children }) {
     }
     return 'RO';
   });
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -36,7 +45,17 @@ export function ThemeProvider({ children }) {
   });
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, lang, toggleLang }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        toggleTheme,
+        lang,
+        toggleLang,
+        mobileSidebarOpen,
+        toggleMobileSidebar: () => setMobileSidebarOpen((prev) => !prev),
+        closeMobileSidebar: () => setMobileSidebarOpen(false),
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

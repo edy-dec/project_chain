@@ -111,11 +111,11 @@ export default function SchedulePage() {
   return (
     <div className="flex flex-col min-h-full bg-dash-bg">
       <TopNav title={t('schedule.title')} />
-      <main className="p-6 space-y-6">
+      <main className="p-4 sm:p-6 space-y-6">
         {shift ? (
           <div className="bg-dash-card border border-dash-border rounded-xl p-4 flex items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-dash-primary/10 flex items-center justify-center text-xl">T</div>
-            <div>
+            <div className="min-w-0">
               <p className="text-dash-text" style={{ fontSize: '14px', fontWeight: 600 }}>{shift.name}</p>
               <p className="text-dash-text-muted" style={{ fontSize: '13px' }}>
                 {shift.startTime} - {shift.endTime} · {shiftDaysLabel}
@@ -141,45 +141,49 @@ export default function SchedulePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-7 border-b border-dash-border">
-            {[t('schedule.sun'), t('schedule.mon'), t('schedule.tue'), t('schedule.wed'), t('schedule.thu'), t('schedule.fri'), t('schedule.sat')].map((dayName) => (
-              <div key={dayName} className="py-2 text-center text-dash-text-muted" style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}>
-                {dayName}
+          <div className="overflow-x-auto">
+            <div className="min-w-[620px]">
+              <div className="grid grid-cols-7 border-b border-dash-border">
+                {[t('schedule.sun'), t('schedule.mon'), t('schedule.tue'), t('schedule.wed'), t('schedule.thu'), t('schedule.fri'), t('schedule.sat')].map((dayName) => (
+                  <div key={dayName} className="py-2 text-center text-dash-text-muted" style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}>
+                    {dayName}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          <div className="grid grid-cols-7">
-            {cells.map((day, index) => {
-              if (!day) {
-                return <div key={index} className="min-h-[80px] p-2 border-b border-r border-dash-border opacity-0 pointer-events-none" />;
-              }
+              <div className="grid grid-cols-7">
+                {cells.map((day, index) => {
+                  if (!day) {
+                    return <div key={index} className="min-h-[80px] p-2 border-b border-r border-dash-border opacity-0 pointer-events-none" />;
+                  }
 
-              const date = new Date(year, month, day);
-              const dow = date.getDay();
-              const isToday = isCurrentMonth && day === todayDate;
-              const attStatus = attByDate[day];
+                  const date = new Date(year, month, day);
+                  const dow = date.getDay();
+                  const isToday = isCurrentMonth && day === todayDate;
+                  const attStatus = attByDate[day];
 
-              return (
-                <div key={index} className="min-h-[80px] p-2 border-b border-r border-dash-border">
-                  <span
-                    className={`inline-flex w-6 h-6 items-center justify-center rounded-full ${isToday ? 'bg-dash-primary text-white' : 'text-dash-text-secondary'}`}
-                    style={{ fontSize: '12px', fontWeight: isToday ? 700 : 400 }}
-                  >
-                    {day}
-                  </span>
-                  {attStatus ? (
-                    <div className={`mt-1 px-1.5 py-0.5 rounded text-center ${ATT_COLORS[attStatus] || ''}`} style={{ fontSize: '10px', fontWeight: 500 }}>
-                      {t(`schedule.att_${attStatus}`) || attStatus}
+                  return (
+                    <div key={index} className="min-h-[80px] p-2 border-b border-r border-dash-border">
+                      <span
+                        className={`inline-flex w-6 h-6 items-center justify-center rounded-full ${isToday ? 'bg-dash-primary text-white' : 'text-dash-text-secondary'}`}
+                        style={{ fontSize: '12px', fontWeight: isToday ? 700 : 400 }}
+                      >
+                        {day}
+                      </span>
+                      {attStatus ? (
+                        <div className={`mt-1 px-1.5 py-0.5 rounded text-center ${ATT_COLORS[attStatus] || ''}`} style={{ fontSize: '10px', fontWeight: 500 }}>
+                          {t(`schedule.att_${attStatus}`) || attStatus}
+                        </div>
+                      ) : shift && shiftDays.includes(dow) ? (
+                        <div className="mt-1 px-1.5 py-0.5 rounded bg-dash-primary/10 text-dash-primary text-center" style={{ fontSize: '10px', fontWeight: 500 }}>
+                          {shift.startTime}-{shift.endTime}
+                        </div>
+                      ) : null}
                     </div>
-                  ) : shift && shiftDays.includes(dow) ? (
-                    <div className="mt-1 px-1.5 py-0.5 rounded bg-dash-primary/10 text-dash-primary text-center" style={{ fontSize: '10px', fontWeight: 500 }}>
-                      {shift.startTime}-{shift.endTime}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
 

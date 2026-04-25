@@ -258,24 +258,24 @@ export default function AdminEmployees() {
 
       {/* Filters */}
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             placeholder={t('employees.search')}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="pl-8 w-56"
+            className="pl-8 w-full sm:w-56"
           />
         </div>
         <Select value={deptFilter} onValueChange={(v) => { setDeptFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-44"><SelectValue placeholder={t('employees.department')} /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder={t('employees.department')} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('employees.allDepts')}</SelectItem>
             {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.label}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-32"><SelectValue placeholder={t('employees.status')} /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder={t('employees.status')} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('employees.all')}</SelectItem>
             <SelectItem value="active">{t('employees.active')}</SelectItem>
@@ -287,7 +287,7 @@ export default function AdminEmployees() {
 
       {/* Table */}
       <div className="bg-card border border-border rounded-lg">
-        <Table>
+        <Table className="min-w-[760px]">
           <TableHeader>
             <TableRow>
               <TableHead>{t('employees.employee')}</TableHead>
@@ -359,7 +359,7 @@ export default function AdminEmployees() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             {t('employees.showing')} {(page - 1) * ITEMS_PER_PAGE + 1}–{Math.min(page * ITEMS_PER_PAGE, filtered.length)} {t('employees.of')} {filtered.length}
           </p>
@@ -385,7 +385,7 @@ export default function AdminEmployees() {
           <DialogHeader>
             <DialogTitle>{editing ? t('employees.editTitle') : t('employees.addTitle')}</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
               { label: t('employees.firstName'), key: 'firstName', type: 'text' },
               { label: t('employees.lastName'),    key: 'lastName',  type: 'text' },

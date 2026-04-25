@@ -328,38 +328,40 @@ export default function AdminOverview() {
               {lang === 'RO' ? 'Nu exista schimburi alocate momentan.' : 'No assigned shifts at the moment.'}
             </p>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left pb-2 text-xs text-muted-foreground font-medium">{t('overview.employee')}</th>
-                  <th className="text-left pb-2 text-xs text-muted-foreground font-medium">{t('overview.time')}</th>
-                  <th className="text-left pb-2 text-xs text-muted-foreground font-medium">{t('overview.type')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {upcomingShifts.map((shift) => (
-                  <tr key={shift.id} className="border-b border-border last:border-0">
-                    <td className="py-2.5">
-                      <div className="flex items-center gap-2">
-                        <div className="size-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">
-                          {getInitials(shift.name)}
-                        </div>
-                        <div>
-                          <p className="font-medium">{shift.name}</p>
-                          <p className="text-xs text-muted-foreground">{shift.role}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-2.5 text-muted-foreground text-xs">{shift.time}</td>
-                    <td className="py-2.5">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${shiftBadgeClass(shift.type)}`}>
-                        {shift.type}
-                      </span>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[540px] text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left pb-2 text-xs text-muted-foreground font-medium">{t('overview.employee')}</th>
+                    <th className="text-left pb-2 text-xs text-muted-foreground font-medium">{t('overview.time')}</th>
+                    <th className="text-left pb-2 text-xs text-muted-foreground font-medium">{t('overview.type')}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {upcomingShifts.map((shift) => (
+                    <tr key={shift.id} className="border-b border-border last:border-0">
+                      <td className="py-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="size-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">
+                            {getInitials(shift.name)}
+                          </div>
+                          <div>
+                            <p className="font-medium">{shift.name}</p>
+                            <p className="text-xs text-muted-foreground">{shift.role}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-2.5 text-muted-foreground text-xs">{shift.time}</td>
+                      <td className="py-2.5">
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${shiftBadgeClass(shift.type)}`}>
+                          {shift.type}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 

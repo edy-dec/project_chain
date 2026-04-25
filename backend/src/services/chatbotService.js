@@ -8,6 +8,34 @@ const geminiClient = process.env.GEMINI_API_KEY
   : null;
 
 class ChatbotService {
+  normalizePaydayDay(value, fallback = 10) {
+    const day = Number(value);
+    return Number.isInteger(day) && day >= 1 && day <= 28 ? day : fallback;
+  }
+
+  toDate(dateValue) {
+    if (!dateValue) return null;
+
+    if (dateValue instanceof Date) {
+      return Number.isNaN(dateValue.getTime()) ? null : new Date(dateValue.getTime());
+    }
+
+    if (typeof dateValue === 'string') {
+      const trimmed = dateValue.trim();
+      if (!trimmed) return null;
+
+      const isoDateOnly = /^\d{4}-\d{2}-\d{2}$/;
+      const parsed = isoDateOnly.test(trimmed)
+        ? new Date(`${trimmed}T00:00:00`)
+        : new Date(trimmed);
+
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    const parsed = new Date(dateValue);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
   normalizeText(text = '') {
     return String(text)
       .toLowerCase()
@@ -34,15 +62,20 @@ class ChatbotService {
   }
 
   formatDate(dateValue, lang = 'RO') {
-    if (!dateValue) return '-';
-    return new Date(`${String(dateValue).slice(0, 10)}T00:00:00`).toLocaleDateString(
+    const parsed = this.toDate(dateValue);
+    if (!parsed) return '-';
+
+    return parsed.toLocaleDateString(
       lang === 'RO' ? 'ro-RO' : 'en-US',
       { day: 'numeric', month: 'long', year: 'numeric' }
     );
   }
 
   formatMonthYear(month, year, lang = 'RO') {
-    return new Date(Number(year), Number(month) - 1, 1).toLocaleDateString(
+    const parsed = new Date(Number(year), Number(month) - 1, 1);
+    if (Number.isNaN(parsed.getTime())) return '-';
+
+    return parsed.toLocaleDateString(
       lang === 'RO' ? 'ro-RO' : 'en-US',
       { month: 'long', year: 'numeric' }
     );
@@ -102,10 +135,11 @@ class ChatbotService {
   }
 
   getNextPayday(today, paydayDay) {
+    const safePaydayDay = this.normalizePaydayDay(paydayDay);
     const current = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const candidate = new Date(today.getFullYear(), today.getMonth(), paydayDay);
+    const candidate = new Date(today.getFullYear(), today.getMonth(), safePaydayDay);
     if (current <= candidate) return candidate;
-    return new Date(today.getFullYear(), today.getMonth() + 1, paydayDay);
+    return new Date(today.getFullYear(), today.getMonth() + 1, safePaydayDay);
   }
 
   getMonthBounds(year, month) {
@@ -253,7 +287,7 @@ class ChatbotService {
       year,
       lastMonth,
       lastMonthYear,
-      paydayDay: settings?.general?.paydayDay ?? 10,
+      paydayDay: this.normalizePaydayDay(settings?.general?.paydayDay),
       currency: settings?.general?.currency || 'RON',
       name: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User',
       position: user?.position || 'N/A',
