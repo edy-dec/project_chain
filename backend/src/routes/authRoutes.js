@@ -5,8 +5,11 @@ const { attachUser } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-router.post('/sync', checkJwt, syncUser);        // no attachUser – user may not exist yet
-router.get('/me',   checkJwt, attachUser, getMe);
-router.put('/me',   checkJwt, attachUser, updateMe);
+// Sincronizarea merge direct pe JWT, chiar daca userul nu exista inca local.
+router.post('/sync', checkJwt, syncUser);
+
+// Profilul cere userul deja atasat din baza de date.
+router.get('/me', checkJwt, attachUser, getMe);
+router.put('/me', checkJwt, attachUser, updateMe);
 
 module.exports = router;

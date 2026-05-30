@@ -65,11 +65,27 @@ module.exports = (sequelize) => {
       },
       sickLeaveBalance: {
         type: DataTypes.INTEGER,
-        defaultValue: 10,
+        defaultValue: 0,
         field: 'sick_leave_balance',
+        comment: 'Not used for sick leave tracking (OUG 158/2005 — based on medical certificate, not balance)',
+      },
+      // Facilitate fiscala activa pentru acest angajat.
+      // Valori posibile: null | 'it' | 'construction' | 'agriculture' | 'disability'
+      // Statutul exact al facilitatilor pentru 2026 necesita verificare juridica (Z-03, Z-04).
+      fiscalExemption: {
+        type: DataTypes.STRING(30),
+        allowNull: true,
+        field: 'fiscal_exemption',
+        validate: {
+          isIn: [['it', 'construction', 'agriculture', 'disability']],
+        },
       },
     },
-    { tableName: 'users', timestamps: true, underscored: true }
+    {
+      tableName: 'users',
+      timestamps: true,
+      underscored: true,
+    }
   );
 
   User.associate = (models) => {
@@ -79,6 +95,8 @@ module.exports = (sequelize) => {
     User.hasMany(models.Leave, { foreignKey: { name: 'userId', field: 'user_id' }, as: 'leaves' });
     User.hasMany(models.Salary, { foreignKey: { name: 'userId', field: 'user_id' }, as: 'salaries' });
     User.hasMany(models.Bonus, { foreignKey: { name: 'userId', field: 'user_id' }, as: 'bonuses' });
+    User.hasMany(models.OvertimeBalance, { foreignKey: { name: 'userId', field: 'user_id' }, as: 'overtimeBalances' });
+    User.hasMany(models.LeaveBalanceHistory, { foreignKey: { name: 'userId', field: 'user_id' }, as: 'leaveBalanceHistory' });
   };
 
   return User;

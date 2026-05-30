@@ -45,8 +45,12 @@ export default function AIAssistantPage() {
           content: data?.data?.reply || data?.reply || t('ai.noResponse'),
         },
       ]);
-    } catch {
-      setMessages((prev) => [...prev, { id: Date.now() + 1, role: 'assistant', content: t('ai.errorOccurred') }]);
+    } catch (err) {
+      setMessages((prev) => [...prev, {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: err?.message || t('ai.errorOccurred'),
+      }]);
     } finally {
       setLoading(false);
     }

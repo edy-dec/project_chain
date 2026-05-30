@@ -1,21 +1,30 @@
 const { getDepartmentKey } = require('./departmentHelper');
 
 /**
- * Returns the number of Mon-Fri working days in a given month.
+ * Returns the number of working days (Mon–Fri, excluding legal holidays) in a month.
+ * @param {number} year
+ * @param {number} month - 1-based
+ * @param {string[]} holidayDates - array of 'YYYY-MM-DD' strings for legal holidays
  */
-const getWorkingDaysInMonth = (year, month) => {
+const getWorkingDaysInMonth = (year, month, holidayDates = []) => {
+  const holidaySet = new Set(holidayDates);
   const daysInMonth = new Date(year, month, 0).getDate();
   let count = 0;
   for (let d = 1; d <= daysInMonth; d++) {
-    const day = new Date(year, month - 1, d).getDay();
-    if (day !== 0 && day !== 6) count++;
+    const date = new Date(year, month - 1, d);
+    const day = date.getDay();
+    if (day === 0 || day === 6) continue;
+    const iso = date.toISOString().split('T')[0];
+    if (!holidaySet.has(iso)) count++;
   }
   return count;
 };
 
 /**
- * Sum bonus amounts against a base salary.
+ * Sums bonus amounts against a base salary.
  * Supports 'fixed' (flat RON) and 'percentage' (% of base) types.
+ * 'overtime_multiplier' type is intentionally excluded — overtime is handled
+ * via OvertimeBalance, not as a bonus.
  */
 const calculateBonuses = (
   bonuses = [],
@@ -44,24 +53,54 @@ const calculateBonuses = (
 }, 0);
 
 /**
- * Romanian employee tax contributions (simplified 2024 rules):
- *   CAS  = 25 % of gross (pension)
- *   CASS = 10 % of gross (health)
- *   Income tax = 10 % of (gross - CAS - CASS - personal deduction)
+ * Romanian employee tax contributions (2024+ rules, no personal deduction).
+ *
+ * Formula:
+ *   CAS  = grossSalary × casRate          (25% — pensii, salariat)
+ *   CASS = grossSalary × cassRate         (10% — sanatate, salariat)
+ *   taxableIncome = grossSalary - CAS - CASS
+ *   taxAmount = taxableIncome × incomeTaxRate  (10%)
+ *   netSalary = grossSalary - CAS - CASS - taxAmount
+ *
+ *   CAM = grossSalary × camRate           (2.25% — angajator, nu se scade din net)
+ *
+ * @param {number} grossSalary
+ * @param {object} taxRates - overridable rates loaded from TaxRule table
+ * @param {number} taxRates.casRate         default 0.25
+ * @param {number} taxRates.cassRate        default 0.10
+ * @param {number} taxRates.incomeTaxRate   default 0.10
+ * @param {number} taxRates.camRate         default 0.0225
+ * @param {string|null} fiscalExemption     'it' | 'construction' | 'agriculture' | 'disability' | null
  */
-const calculateRomanianTaxes = (grossSalary) => {
-  const cas  = grossSalary * 0.25;
-  const cass = grossSalary * 0.10;
-  const taxableIncome = grossSalary - cas - cass;
+const calculateRomanianTaxes = (grossSalary, taxRates = {}, fiscalExemption = null) => {
+  const casRate       = taxRates.casRate       ?? 0.25;
+  const cassRate      = taxRates.cassRate      ?? 0.10;
+  const incomeTaxRate = taxRates.incomeTaxRate ?? 0.10;
+  const camRate       = taxRates.camRate       ?? 0.0225;
 
-  // Simplified personal deduction (0 if taxableIncome > 3000 RON)
-  const personalDeduction = taxableIncome <= 3000 ? 500 : 0;
-  const taxAmount = Math.max(0, (taxableIncome - personalDeduction) * 0.10);
+  const casAmount  = grossSalary * casRate;
+  const cassAmount = grossSalary * cassRate;
+  const taxableIncome = grossSalary - casAmount - cassAmount;
 
-  const socialContributions = cas + cass;
+  // Facilitate fiscala: scutire impozit pe venit.
+  // Statutul exact al facilitatilor pentru 2026 necesita verificare juridica (audit Z-03, Z-04).
+  const exemptFromIncomeTax = ['it', 'disability'].includes(fiscalExemption);
+  const taxAmount = exemptFromIncomeTax ? 0 : Math.max(0, taxableIncome * incomeTaxRate);
+
+  const socialContributions = casAmount + cassAmount;
   const netSalary = Math.max(0, grossSalary - socialContributions - taxAmount);
 
-  return { taxAmount, socialContributions, netSalary };
+  // CAM este cost angajator — nu se scade din salariul net al angajatului
+  const camAmount = grossSalary * camRate;
+
+  return {
+    casAmount: +casAmount.toFixed(2),
+    cassAmount: +cassAmount.toFixed(2),
+    socialContributions: +(socialContributions).toFixed(2),
+    taxAmount: +taxAmount.toFixed(2),
+    camAmount: +camAmount.toFixed(2),
+    netSalary: +netSalary.toFixed(2),
+  };
 };
 
 module.exports = { getWorkingDaysInMonth, calculateBonuses, calculateRomanianTaxes };

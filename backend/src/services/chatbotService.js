@@ -8,6 +8,12 @@ const geminiClient = process.env.GEMINI_API_KEY
   : null;
 
 class ChatbotService {
+  getUnknownReply(lang = 'RO') {
+    return lang === 'RO'
+      ? 'Nu sunt sigur ce ai vrut să spui, dar pot ajuta cu concediu, salariu, program, pontaj sau bonusuri. Dacă vrei, poți reformula mai simplu.'
+      : 'I am not fully sure what you meant, but I can help with leave, salary, schedule, attendance, or bonuses. If you want, try rephrasing it more simply.';
+  }
+
   normalizePaydayDay(value, fallback = 10) {
     const day = Number(value);
     return Number.isInteger(day) && day >= 1 && day <= 28 ? day : fallback;
@@ -151,7 +157,7 @@ class ChatbotService {
   detectExactIntent(message = '') {
     const text = this.normalizeText(message);
 
-    const hasLeave = /(conced|vacation|leave|zile liber)/.test(text);
+    const hasLeave = /(conced|vacan|liber|zile liber|time off|holiday|absen)/.test(text);
     const hasSalary = /(salari|salary|payday|plata salari|ziua de plata)/.test(text);
     const hasSchedule = /(program|schedule|shift|cand lucrez|when do i work)/.test(text);
     const hasHours = /(pontaj|ore|hours worked|worked hours|cat am lucrat|cate ore|overtime|ore suplimentare)/.test(text);
@@ -162,7 +168,13 @@ class ChatbotService {
     if (hasLeave && /(anul asta|anul acesta|this year|year to date|year-to-date)/.test(text) && /(luat|luate|taken|used|folosit|folosite|consumat)/.test(text)) {
       return 'leave_taken_year';
     }
-    if (hasLeave && /(cate zile|how many.*days|balance|ramase|remaining|mai am)/.test(text)) {
+    if (hasLeave && /(cand pot|when can i take|cand as putea|when could i take|when do i take|when can i request|next leave|urmatorul concediu|time off|vacation)/.test(text)) {
+      return 'next_leave';
+    }
+    if (hasLeave && /(cate zile|how many.*days|balance|ramase|remaining|mai am|ce zile|available|available days)/.test(text)) {
+      return 'leave_balance';
+    }
+    if (hasLeave && /(pot sa mi iau|am voie sa|can i take|mi pot lua|imi pot lua|request leave|take leave|free day|day off|liber|vacanta)/.test(text)) {
       return 'leave_balance';
     }
     if (hasSalary && /(payday|ziua de plata|cand se plateste|cand primesc salariul|when.*paid|when is my next pay)/.test(text)) {
@@ -184,6 +196,91 @@ class ChatbotService {
       return 'attendance_month';
     }
     return null;
+  }
+
+  buildSmartFallbackReply(message, ctx, lang = 'RO') {
+    const text = this.normalizeText(message);
+
+    const mentionsLeave = /(conced|vacan|liber|time off|holiday|absen)/.test(text);
+    const mentionsSalary = /(salari|salary|payday|fluturas|fluturas|brut|net)/.test(text);
+    const mentionsSchedule = /(program|schedule|shift|tura|lucrez|lucru)/.test(text);
+    const mentionsHours = /(pontaj|ore|overtime|extra|lucrat|worked)/.test(text);
+
+    const parts = [];
+
+    if (mentionsLeave) {
+      const leaveLine = lang === 'RO'
+        ? `Ai ${ctx.annualLeave} zile de concediu anual și ${ctx.sickLeave} zile de concediu medical.`
+        : `You have ${ctx.annualLeave} annual leave days and ${ctx.sickLeave} sick leave days.`;
+
+      const nextLeaveLine = ctx.nextApprovedLeave
+        ? (lang === 'RO'
+          ? `Următorul concediu aprobat începe pe ${this.formatDate(ctx.nextApprovedLeave.startDate, 'RO')} și se termină pe ${this.formatDate(ctx.nextApprovedLeave.endDate, 'RO')}.`
+          : `Your next approved leave starts on ${this.formatDate(ctx.nextApprovedLeave.startDate, 'EN')} and ends on ${this.formatDate(ctx.nextApprovedLeave.endDate, 'EN')}.`)
+        : (lang === 'RO'
+          ? 'Nu ai momentan un concediu viitor aprobat.'
+          : 'You do not have an approved upcoming leave right now.');
+
+      parts.push(leaveLine, nextLeaveLine);
+
+      parts.push(
+        lang === 'RO'
+          ? 'Dacă vrei să ceri concediu, mergi în secțiunea Concedii și trimite o cerere nouă.'
+          : 'If you want to request leave, go to the Leave section and submit a new request.'
+      );
+    }
+
+    if (mentionsSalary) {
+      if (ctx.currentSalary) {
+        parts.push(
+          lang === 'RO'
+            ? `Salariul curent pentru ${this.formatMonthYear(ctx.currentSalary.month, ctx.currentSalary.year, 'RO')} este net ${this.formatMoney(ctx.currentSalary.net, ctx.currency, 'RO')}, brut ${this.formatMoney(ctx.currentSalary.gross, ctx.currency, 'RO')}, bonusuri ${this.formatMoney(ctx.currentSalary.bonuses, ctx.currency, 'RO')} și overtime ${this.formatMoney(ctx.currentSalary.overtimePay, ctx.currency, 'RO')}.`
+            : `Your current salary for ${this.formatMonthYear(ctx.currentSalary.month, ctx.currentSalary.year, 'EN')} is net ${this.formatMoney(ctx.currentSalary.net, ctx.currency, 'EN')}, gross ${this.formatMoney(ctx.currentSalary.gross, ctx.currency, 'EN')}, bonuses ${this.formatMoney(ctx.currentSalary.bonuses, ctx.currency, 'EN')}, and overtime ${this.formatMoney(ctx.currentSalary.overtimePay, ctx.currency, 'EN')}.`
+        );
+      } else if (ctx.lastSalary) {
+        parts.push(
+          lang === 'RO'
+            ? `Nu este încă generat salariul pentru luna aceasta. Ultimul salariu disponibil este din ${this.formatMonthYear(ctx.lastSalary.month, ctx.lastSalary.year, 'RO')}.`
+            : `The salary for this month is not generated yet. Your latest available salary is from ${this.formatMonthYear(ctx.lastSalary.month, ctx.lastSalary.year, 'EN')}.`
+        );
+      } else {
+        parts.push(
+          lang === 'RO'
+            ? 'Nu am găsit încă un salariu generat în sistem.'
+            : 'I could not find a generated salary in the system yet.'
+        );
+      }
+
+      parts.push(
+        lang === 'RO'
+          ? `Următoarea zi de plată este ${this.formatDate(this.getNextPayday(ctx.today, ctx.paydayDay), 'RO')}.`
+          : `Your next payday is ${this.formatDate(this.getNextPayday(ctx.today, ctx.paydayDay), 'EN')}.`
+      );
+    }
+
+    if (mentionsSchedule) {
+      parts.push(
+        ctx.shift
+          ? (lang === 'RO'
+            ? `Programul tău este ${ctx.shift.name}, ${ctx.shift.startTime} - ${ctx.shift.endTime}${ctx.shift.daysOfWeek?.length ? `, în zilele: ${this.buildShiftDaysLabel(ctx.shift.daysOfWeek, 'RO')}` : ''}.`
+            : `Your schedule is ${ctx.shift.name}, ${ctx.shift.startTime} - ${ctx.shift.endTime}${ctx.shift.daysOfWeek?.length ? `, on: ${this.buildShiftDaysLabel(ctx.shift.daysOfWeek, 'EN')}` : ''}.`)
+          : (lang === 'RO' ? 'Nu ai încă un program atribuit.' : 'You do not have an assigned schedule yet.')
+      );
+    }
+
+    if (mentionsHours) {
+      parts.push(
+        lang === 'RO'
+          ? `În ${this.formatMonthYear(ctx.month, ctx.year, 'RO')} ai ${ctx.monthlyHours} ore pontate, ${ctx.monthlyDays} zile lucrate și ${ctx.monthlyOvertimeHours} ore suplimentare.`
+          : `In ${this.formatMonthYear(ctx.month, ctx.year, 'EN')}, you have ${ctx.monthlyHours} tracked hours, ${ctx.monthlyDays} worked days, and ${ctx.monthlyOvertimeHours} overtime hours.`
+      );
+    }
+
+    if (!parts.length) return null;
+
+    return lang === 'RO'
+      ? `Am prins că întrebi despre HR. Iată ce știu acum:\n- ${parts.join('\n- ')}`
+      : `I can tell you are asking about HR. Here is what I know right now:\n- ${parts.join('\n- ')}`;
   }
 
   formatMessages(messages) {
@@ -393,7 +490,7 @@ class ChatbotService {
       }
 
       return lang === 'RO'
-        ? 'Nu ai niciun concediu viitor aprobat in acest moment.'
+        ? `Nu ai niciun concediu viitor aprobat in acest moment. Poti solicita concediu oricand ai zile disponibile; acum ai ${ctx.annualLeave} zile de concediu anual si ${ctx.sickLeave} zile de concediu medical.`
         : 'You do not have any approved upcoming leave right now.';
     }
 
@@ -471,19 +568,21 @@ class ChatbotService {
       .reverse()
       .find((message) => message?.role === 'user')?.content || '';
     const lang = this.detectLanguage(lastUserMessage);
-    const ctx = await this.buildContext(userId);
-    const exactIntent = this.detectExactIntent(lastUserMessage);
-    const exactReply = this.buildExactReply(exactIntent, ctx, lang);
 
-    if (exactReply) {
-      return exactReply;
-    }
+    try {
+      const ctx = await this.buildContext(userId);
+      const exactIntent = this.detectExactIntent(lastUserMessage);
+      const exactReply = this.buildExactReply(exactIntent, ctx, lang);
 
-    if (!geminiClient) {
-      throw new Error('GEMINI_API_KEY is not configured');
-    }
+      if (exactReply) {
+        return exactReply;
+      }
 
-    const system = `You are Chain Assistant, the AI helper for the Chain HR Management platform.
+      if (!geminiClient) {
+        return this.buildSmartFallbackReply(lastUserMessage, ctx, lang) || this.getUnknownReply(lang);
+      }
+
+      const system = `You are Chain Assistant, the AI helper for the Chain HR Management platform.
 You are professional, friendly and concise. Always respond in the same language as the user's message.
 
 == Employee Context ==
@@ -504,20 +603,28 @@ Payday day of month: ${ctx.paydayDay}${ctx.lastSalary ? `\nLast Salary (${ctx.la
 - Never invent other employees' data.
 - Keep answers concise and practical.`;
 
-    const model = geminiClient.getGenerativeModel({
-      model: process.env.GEMINI_MODEL || 'gemini-3-flash-preview',
-      systemInstruction: system,
-    });
+      const model = geminiClient.getGenerativeModel({
+        model: process.env.GEMINI_MODEL || 'gemini-3-flash-preview',
+        systemInstruction: system,
+      });
 
-    const response = await model.generateContent({
-      contents: this.formatMessages(messages),
-      generationConfig: {
-        temperature: 0.4,
-        maxOutputTokens: 500,
-      },
-    });
+      const response = await model.generateContent({
+        contents: this.formatMessages(messages),
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 500,
+        },
+      });
 
-    return response.response.text();
+      const geminiReply = response.response.text();
+      if (geminiReply && geminiReply.trim()) {
+        return geminiReply;
+      }
+
+      return this.buildSmartFallbackReply(lastUserMessage, ctx, lang) || this.getUnknownReply(lang);
+    } catch (err) {
+      return this.buildSmartFallbackReply(lastUserMessage, ctx, lang) || this.getUnknownReply(lang);
+    }
   }
 }
 

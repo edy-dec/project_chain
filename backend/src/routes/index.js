@@ -11,6 +11,8 @@ const demoRequestRoutes = require('./demoRequestRoutes');
 const newsletterRoutes = require('./newsletterRoutes');
 const settingsRoutes   = require('./settingsRoutes');
 const bonusRoutes      = require('./bonusRoutes');
+const overtimeRoutes       = require('./overtimeRoutes');
+const fieldActivityRoutes  = require('./fieldActivityRoutes');
 
 const router = express.Router();
 
@@ -26,5 +28,7 @@ router.use('/demo-requests', demoRequestRoutes);
 router.use('/newsletter',  newsletterRoutes);
 router.use('/settings',    settingsRoutes);
 router.use('/bonuses',     bonusRoutes);
+router.use('/overtime',          overtimeRoutes);
+router.use('/field-activities',  fieldActivityRoutes);
 
 module.exports = router;

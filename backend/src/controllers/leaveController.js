@@ -46,4 +46,22 @@ const getAllLeaves = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
-module.exports = { requestLeave, approveLeave, rejectLeave, cancelLeave, getMyLeaves, getUserLeaves, getAllLeaves, getMyBalance };
+const getMyBalanceHistory = async (req, res, next) => {
+  try {
+    const result = await leaveService.getLeaveBalanceHistory(req.currentUser.id, req.query);
+    return paginated(res, result.history, result.total, result.page, result.totalPages);
+  } catch (e) { next(e); }
+};
+
+const getUserBalanceHistory = async (req, res, next) => {
+  try {
+    const result = await leaveService.getLeaveBalanceHistory(req.params.userId, req.query);
+    return paginated(res, result.history, result.total, result.page, result.totalPages);
+  } catch (e) { next(e); }
+};
+
+module.exports = {
+  requestLeave, approveLeave, rejectLeave, cancelLeave,
+  getMyLeaves, getUserLeaves, getAllLeaves, getMyBalance,
+  getMyBalanceHistory, getUserBalanceHistory,
+};

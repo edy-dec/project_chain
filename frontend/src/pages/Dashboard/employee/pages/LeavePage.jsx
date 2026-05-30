@@ -43,6 +43,8 @@ export default function LeavePage() {
     { value: 'unpaid',    label: tFn('empLeave.unpaid')    },
     { value: 'maternity', label: tFn('empLeave.maternity') },
     { value: 'paternity', label: tFn('empLeave.paternity') },
+    { value: 'parental',  label: tFn('empLeave.parental')  },
+    { value: 'study',     label: tFn('empLeave.study')     },
   ];
   const TYPE_LABELS_T = Object.fromEntries(LEAVE_TYPES_T.map(lt => [lt.value, lt.label]));
   const STATUS_LABELS_T = { approved: tFn('empLeave.approved'), pending: tFn('empLeave.pending'), rejected: tFn('empLeave.rejected'), cancelled: tFn('empLeave.cancelled') };
