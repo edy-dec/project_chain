@@ -60,6 +60,13 @@ const AdminRoute = ({ children }) => {
   return isAdminOrManager ? children : <Navigate to="/dashboard" replace />;
 };
 
+/** Requires admin role (owner-only pages); managers → /admin. */
+const OwnerRoute = ({ children }) => {
+  const { isAdmin, loading } = useAuth();
+  if (loading) return <Spinner fullscreen />;
+  return isAdmin ? children : <Navigate to="/admin" replace />;
+};
+
 /** Prevents admins from using employee routes → /admin. */
 const EmployeeRoute = ({ children }) => {
   const { isAdminOrManager, loading } = useAuth();
@@ -94,7 +101,7 @@ const AppRoutes = () => (
         <Route path="admin/shifts"    element={<AdminShifts />} />
         <Route path="admin/leave"     element={<AdminLeave />} />
         <Route path="admin/bonuses"   element={<AdminBonuses />} />
-        <Route path="admin/demo-requests" element={<AdminDemoRequests />} />
+        <Route path="admin/demo-requests" element={<OwnerRoute><AdminDemoRequests /></OwnerRoute>} />
         <Route path="admin/reports"   element={<AdminReports />} />
         <Route path="admin/settings"  element={<AdminSettings />} />
       </Route>

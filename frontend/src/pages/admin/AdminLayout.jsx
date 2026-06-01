@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
   Users,
@@ -38,7 +39,7 @@ const NAV_ITEMS = [
   { key: 'nav.shifts',    to: '/admin/shifts',    icon: Calendar },
   { key: 'nav.leave',     to: '/admin/leave',     icon: FileText },
   { key: 'nav.bonuses',   to: '/admin/bonuses',   icon: Gift },
-  { key: 'nav.demoRequests', to: '/admin/demo-requests', icon: Inbox },
+  { key: 'nav.demoRequests', to: '/admin/demo-requests', icon: Inbox, adminOnly: true },
   { key: 'nav.reports',   to: '/admin/reports',   icon: BarChart2 },
   { key: 'nav.settings',  to: '/admin/settings',  icon: Settings },
 ];
@@ -84,6 +85,7 @@ export default function AdminLayout() {
   const [notifSource, setNotifSource] = useState({ employees: [], pendingLeaves: [] });
   const t = useT(lang);
   const { user, logout } = useAuth0();
+  const { isAdmin } = useAuth();
   const profileRef = useRef(null);
   const notifRef   = useRef(null);
 
@@ -144,7 +146,7 @@ export default function AdminLayout() {
     return next;
   });
 
-  const navItems = NAV_ITEMS;
+  const navItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
   const unreadCount = notifications.filter((n) => n.unread).length;
   const initials    = user?.name
     ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)

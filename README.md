@@ -39,8 +39,8 @@ Aplicația are trei tipuri de utilizatori, fiecare cu experiență și permisiun
 
 | Rol | Cine este | Ce face în aplicație |
 |---|---|---|
-| **Admin** | Director HR, Manager General | Gestionează totul: angajați, salarii, ture, concedii, ore suplimentare, activități de teren, rapoarte, setări |
-| **Manager** | Team Lead, Manager de departament | Supervizează echipa, aprobă concedii și activități de teren, compensează ore suplimentare, vizualizează rapoarte |
+| **Admin** | Owner platformă | Acces complet: angajați, salarii, ture, concedii, ore suplimentare, activități de teren, rapoarte, setări **și cereri demo** (funcție exclusivă SaaS, invizibilă pentru manageri) |
+| **Manager** | Team Lead, Manager de departament | Supervizează echipa: aprobă concedii și activități de teren, compensează ore suplimentare, înregistrare manuală pontaj, vizualizează rapoarte — **fără acces la cereri demo** |
 | **Employee** | Angajat obișnuit | Pontaj zilnic, cereri de concediu și activități de teren, vizualizare salariu și ore suplimentare, asistent AI |
 
 ---
@@ -148,7 +148,7 @@ Aplicația are trei tipuri de utilizatori, fiecare cu experiență și permisiun
 ### Landing Page & Demo Requests
 - Pagină publică de prezentare a platformei
 - Formular de cerere demo/trial
-- Admin poate vedea și gestiona cererile de demo (`new` → `contacted` → `closed`)
+- **Exclusiv Admin (owner):** gestionare cereri demo (`new` → `contacted` → `closed`) — funcție SaaS, nu face parte din ecosistemul de management HR; invizibilă și inaccesibilă pentru manageri
 - Abonare newsletter
 
 ---
@@ -529,14 +529,14 @@ Attendance ──1:N──► FieldActivity
 ### Ierarhia Rolurilor
 
 ```
-admin
+admin  (owner platformă)
   ├── Toate drepturile managerului
   ├── CRUD angajați (creare, editare, dezactivare)
   ├── Generare și plată salarii (individual + în masă)
   ├── Creare/editare bonusuri
   ├── Modificare setări aplicație
-  ├── Gestionare cereri demo
-  └── Vizualizare / compensare ore suplimentare (toți angajații)
+  ├── Vizualizare / compensare ore suplimentare (toți angajații)
+  └── [EXCLUSIV] Gestionare cereri demo (SaaS) — invizibil pentru manageri
 
 manager
   ├── Toate drepturile angajatului
